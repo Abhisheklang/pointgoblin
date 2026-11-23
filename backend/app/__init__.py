@@ -1,0 +1,1 @@
+"""PointGoblin backend application package."""
