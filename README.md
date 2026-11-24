@@ -38,6 +38,24 @@ This repository is a backend portfolio project. It exists to demonstrate, with r
 6. The host reveals. Every card flips, and the average and agreement appear.
 7. The team talks, resets if needed, and moves to the next story.
 
+## Screenshots and demo recording
+
+[![Screen recording of a live PointGoblin session](screenshots/planning-poker-room-voting-in-progress-desktop.png)](recordings/pointgoblin-planning-poker-live-demo-720p.mp4)
+
+The image above links to a screen recording of a real host and guest session, from opening the room to the reveal. The recording runs 45.8 seconds. The linked file is the 720p copy, and a 1080p master sits in the same recordings folder.
+
+![Landing page on a desktop](screenshots/planning-poker-online-landing-page-desktop.png)
+
+![Room voting in progress, host view](screenshots/planning-poker-room-voting-in-progress-desktop.png)
+
+![Votes hidden before the reveal, guest view](screenshots/planning-poker-room-votes-hidden-before-reveal.png)
+
+![Results with average and agreement](screenshots/planning-poker-results-average-and-agreement-desktop.png)
+
+![Voting deck on a phone](screenshots/planning-poker-room-voting-deck-mobile.png)
+
+![Landing page on a phone](screenshots/planning-poker-online-landing-page-mobile.png)
+
 ## Architecture
 
 PointGoblin is split into a Python backend and a TypeScript frontend, with infrastructure that is designed to scale past one process.
