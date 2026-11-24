@@ -29,6 +29,12 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500..900;1,9..144,500..900&family=IBM+Plex+Mono:wght@500;600&family=Inter+Tight:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -42,16 +48,20 @@
     </script>
     <style>
       :root {
-        --forest-950: #0b120c;
-        --forest-900: #101a12;
-        --forest-850: #14221a;
-        --forest-700: #274435;
-        --moss-500: #4c7a3f;
-        --goblin-400: #8bd450;
-        --goblin-300: #a9e178;
-        --cream-50: #eaf6e3;
-        --cream-300: #c3d6ba;
-        --muted-400: #93a98f;
+        --paper: #f7f2e2;
+        --parchment: #efe6cc;
+        --card: #fffdf4;
+        --ink: #152a1e;
+        --inksoft: #5c6b57;
+        --evergreen: #17573a;
+        --felt: #0d3524;
+        --leaf: #6a994e;
+        --brass: #ce9f3e;
+        --brassdeep: #a67c2e;
+        --line: #d9cfb2;
+        --serif: "Fraunces", "Iowan Old Style", Georgia, serif;
+        --sans: "Inter Tight", "Segoe UI", system-ui, sans-serif;
+        --mono: "IBM Plex Mono", Consolas, monospace;
         --dur-fast: 120ms;
         --dur-base: 200ms;
         --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
@@ -61,152 +71,446 @@
       }
       body {
         margin: 0;
-        font-family: Inter, system-ui, "Segoe UI", Roboto, sans-serif;
-        background: var(--forest-950);
-        color: var(--cream-50);
+        font-family: var(--sans);
+        background-color: var(--paper);
+        background-image: radial-gradient(rgba(21, 42, 30, 0.055) 1px, transparent 1.4px);
+        background-size: 22px 22px;
+        color: var(--ink);
         line-height: 1.6;
       }
       .wrap {
-        max-width: 1080px;
+        max-width: 1120px;
         margin: 0 auto;
         padding: 0 20px;
+      }
+      .kicker {
+        font-family: var(--mono);
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
       }
       header.site {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 20px 0;
+        gap: 16px;
+        padding: 18px 0;
+        border-bottom: 2px solid var(--ink);
       }
       .brand {
         display: inline-flex;
         align-items: center;
         gap: 10px;
+        font-family: var(--serif);
         font-weight: 700;
-        font-size: 1.125rem;
-        color: var(--cream-50);
+        font-size: 1.35rem;
+        color: var(--ink);
         text-decoration: none;
       }
-      .brand b {
-        color: var(--goblin-400);
-        font-weight: 700;
+      .brand em {
+        color: var(--evergreen);
       }
       nav a {
-        color: var(--muted-400);
+        font-family: var(--mono);
+        color: var(--inksoft);
         text-decoration: none;
-        font-size: 0.9rem;
+        font-size: 0.7rem;
         font-weight: 600;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
         margin-left: 22px;
       }
       nav a:hover {
-        color: var(--cream-50);
+        color: var(--evergreen);
       }
       .hero {
-        padding: 56px 0 40px;
-        max-width: 720px;
+        display: grid;
+        grid-template-columns: 1.15fr 0.85fr;
+        gap: 32px;
+        align-items: center;
+        padding: 54px 0 30px;
       }
-      h1 {
-        font-size: clamp(2.1rem, 5vw, 3.2rem);
-        line-height: 1.12;
-        margin: 0 0 18px;
+      .hero h1 {
+        font-family: var(--serif);
+        font-weight: 900;
+        font-size: clamp(2.7rem, 6vw, 4.4rem);
+        line-height: 0.98;
+        letter-spacing: -0.01em;
+        margin: 14px 0 20px;
       }
-      h1 .accent {
-        color: var(--goblin-400);
+      .hero h1 .line2 {
         display: block;
+        color: var(--evergreen);
+        font-style: italic;
       }
-      .hero p {
-        color: var(--cream-300);
-        font-size: 1.1rem;
-        margin: 0 0 26px;
+      .hero p.lede {
+        color: var(--inksoft);
+        font-size: 1.12rem;
+        max-width: 34rem;
+        margin: 0 0 28px;
+      }
+      .cta-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
       }
       .cta {
         display: inline-block;
-        background: var(--goblin-400);
-        color: var(--forest-950);
+        font-family: var(--serif);
         font-weight: 700;
+        font-size: 1.05rem;
         padding: 13px 26px;
-        border-radius: 10px;
+        border: 1.5px solid var(--ink);
+        box-shadow: 4px 4px 0 rgba(21, 42, 30, 0.9);
         text-decoration: none;
         transition:
           transform var(--dur-fast) var(--ease-out),
           background-color var(--dur-fast) var(--ease-out);
       }
-      .cta:hover {
-        background: var(--goblin-300);
-        transform: translateY(-1px);
+      .cta.primary {
+        background: var(--evergreen);
+        color: var(--paper);
+      }
+      .cta.primary:hover {
+        background: var(--felt);
+        transform: translate(-1px, -1px);
       }
       .cta.secondary {
-        background: var(--forest-850);
-        color: var(--cream-50);
-        margin-left: 10px;
+        background: var(--card);
+        color: var(--ink);
+      }
+      .cta.secondary:hover {
+        background: var(--parchment);
+        transform: translate(-1px, -1px);
+      }
+      /* The fan: five cards spread from one point on the table. */
+      .fan {
+        position: relative;
+        height: 330px;
+      }
+      .fan .fcard {
+        position: absolute;
+        left: 50%;
+        bottom: 26px;
+        width: 148px;
+        height: 208px;
+        margin-left: -74px;
+        border: 2px solid var(--ink);
+        border-radius: 12px;
+        transform-origin: 50% 88%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--serif);
+        font-weight: 900;
+      }
+      .fan .back {
+        background-color: var(--felt);
+        background-image:
+          repeating-linear-gradient(45deg, rgba(247, 242, 226, 0.1) 0 2px, transparent 2px 14px),
+          repeating-linear-gradient(-45deg, rgba(247, 242, 226, 0.1) 0 2px, transparent 2px 14px);
+      }
+      .fan .face {
+        background: var(--card);
+        color: var(--ink);
+        font-size: 4.4rem;
+      }
+      .fan .face small {
+        position: absolute;
+        font-size: 1.05rem;
+      }
+      .fan .face .tl {
+        top: 10px;
+        left: 12px;
+      }
+      .fan .face .br {
+        bottom: 10px;
+        right: 12px;
+        transform: rotate(180deg);
+      }
+      .fan .c1 {
+        transform: rotate(-21deg);
+      }
+      .fan .c2 {
+        transform: rotate(-10deg);
+      }
+      .fan .c3 {
+        transform: rotate(0deg);
+        z-index: 3;
+      }
+      .fan .c4 {
+        transform: rotate(10deg);
+      }
+      .fan .c5 {
+        transform: rotate(21deg);
+      }
+      .fan .stamp {
+        position: absolute;
+        right: 2%;
+        top: 6px;
+        z-index: 4;
+        width: 104px;
+        height: 104px;
+        border: 3px double var(--evergreen);
+        border-radius: 50%;
+        color: var(--evergreen);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        transform: rotate(9deg);
+        background: rgba(247, 242, 226, 0.85);
+        text-align: center;
+      }
+      .fan .stamp b {
+        font-family: var(--serif);
+        font-size: 1.02rem;
+        line-height: 1.1;
+      }
+      .fan .stamp span {
+        font-family: var(--mono);
+        font-size: 0.55rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        margin-top: 3px;
+      }
+      /* Deck strip */
+      .strip {
+        border-top: 2px solid var(--ink);
+        border-bottom: 2px solid var(--ink);
+        background: var(--parchment);
+        overflow: hidden;
+        padding: 9px 0;
+        margin: 14px 0 0;
+      }
+      .strip .track {
+        display: inline-flex;
+        white-space: nowrap;
+        animation: pg-strip 30s linear infinite;
+      }
+      .strip .row {
+        display: inline-flex;
+        align-items: center;
+      }
+      .strip .row b {
+        font-family: var(--serif);
+        font-weight: 900;
+        font-size: 1.15rem;
+        padding: 0 16px;
+      }
+      .strip .row i {
+        color: var(--brassdeep);
+        font-style: normal;
+      }
+      @keyframes pg-strip {
+        from {
+          transform: translateX(0);
+        }
+        to {
+          transform: translateX(-50%);
+        }
       }
       section.block {
-        padding: 34px 0;
+        padding: 46px 0 8px;
+      }
+      .block-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 10px;
       }
       h2 {
-        font-size: 1.6rem;
-        margin: 0 0 14px;
-      }
-      .grid {
-        display: grid;
-        gap: 16px;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      }
-      .card {
-        background: var(--forest-900);
-        border-radius: 14px;
-        padding: 20px;
-      }
-      .card h3 {
-        margin: 0 0 8px;
-        font-size: 1.1rem;
-      }
-      .card p,
-      .block p.lead {
-        color: var(--cream-300);
+        font-family: var(--serif);
+        font-weight: 900;
+        font-size: clamp(1.7rem, 3.4vw, 2.3rem);
+        line-height: 1.05;
         margin: 0;
       }
-      ol.steps {
-        color: var(--cream-300);
-        padding-left: 20px;
+      ol.rows {
+        list-style: none;
+        margin: 0;
+        padding: 0;
       }
-      ol.steps li {
-        margin-bottom: 8px;
+      ol.rows li {
+        display: grid;
+        grid-template-columns: 84px 240px 1fr;
+        gap: 18px;
+        align-items: baseline;
+        padding: 18px 0;
+        border-top: 1.5px solid var(--line);
+      }
+      ol.rows li:last-child {
+        border-bottom: 1.5px solid var(--line);
+      }
+      ol.rows .num {
+        font-family: var(--serif);
+        font-weight: 900;
+        font-size: 2rem;
+        color: var(--brassdeep);
+        line-height: 1;
+      }
+      ol.rows h3 {
+        font-family: var(--serif);
+        font-size: 1.2rem;
+        margin: 0;
+      }
+      ol.rows p {
+        margin: 0;
+        color: var(--inksoft);
+        max-width: 36rem;
+      }
+      .band {
+        background: var(--parchment);
+        border-top: 2px solid var(--ink);
+        border-bottom: 2px solid var(--ink);
+        margin-top: 52px;
+      }
+      .cols {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0;
+        padding: 36px 0 42px;
+      }
+      .cols article {
+        padding: 0 26px;
+        border-left: 1.5px solid var(--ink);
+      }
+      .cols article:first-child {
+        padding-left: 0;
+        border-left: none;
+      }
+      .cols h3 {
+        font-family: var(--serif);
+        font-size: 1.35rem;
+        margin: 0 0 8px;
+      }
+      .cols p {
+        margin: 0;
+        color: var(--inksoft);
+      }
+      .cols .kicker {
+        color: var(--brassdeep);
+        display: block;
+        margin-bottom: 10px;
       }
       details {
-        background: var(--forest-900);
-        border-radius: 12px;
-        padding: 14px 18px;
-        margin-bottom: 10px;
+        background: var(--card);
+        border: 1.5px solid var(--ink);
+        box-shadow: 4px 4px 0 rgba(21, 42, 30, 0.9);
+        padding: 15px 19px;
+        margin-bottom: 12px;
       }
       summary {
         cursor: pointer;
-        font-weight: 600;
+        font-family: var(--serif);
+        font-weight: 700;
+        font-size: 1.08rem;
+        list-style: none;
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      summary::-webkit-details-marker {
+        display: none;
+      }
+      summary::after {
+        content: "+";
+        font-family: var(--serif);
+        font-weight: 900;
+        color: var(--brassdeep);
+      }
+      details[open] summary::after {
+        content: "×";
       }
       details p {
-        color: var(--cream-300);
-        margin: 8px 0 4px;
+        color: var(--inksoft);
+        margin: 9px 0 4px;
       }
       footer.site {
-        border-top: 1px solid var(--forest-700);
-        margin-top: 30px;
-        padding: 22px 0 30px;
-        color: var(--muted-400);
-        font-size: 0.9rem;
+        background: var(--felt);
+        color: var(--paper);
+        margin-top: 56px;
+      }
+      footer.site .inner {
         display: flex;
         flex-wrap: wrap;
-        gap: 8px;
+        gap: 10px;
+        align-items: center;
         justify-content: space-between;
+        padding: 26px 0 30px;
+      }
+      footer.site .brandline {
+        font-family: var(--serif);
+        font-weight: 700;
+        font-size: 1.15rem;
+      }
+      footer.site .brandline em {
+        color: var(--brass);
+      }
+      footer.site p {
+        margin: 4px 0 0;
+        color: rgba(247, 242, 226, 0.7);
+        font-size: 0.92rem;
       }
       footer.site a {
-        color: var(--cream-300);
+        color: var(--paper);
         font-weight: 600;
-        text-decoration: none;
+      }
+      @media (max-width: 860px) {
+        .hero {
+          grid-template-columns: 1fr;
+          padding-top: 38px;
+        }
+        .fan {
+          height: 264px;
+        }
+        .fan .fcard {
+          width: 112px;
+          height: 158px;
+          margin-left: -56px;
+        }
+        .fan .face {
+          font-size: 3.2rem;
+        }
+        .fan .stamp {
+          width: 88px;
+          height: 88px;
+        }
+        ol.rows li {
+          grid-template-columns: 56px 1fr;
+        }
+        ol.rows p {
+          grid-column: 2;
+        }
+        .cols {
+          grid-template-columns: 1fr;
+          gap: 26px;
+        }
+        .cols article {
+          padding: 0;
+          border-left: none;
+          border-top: 1.5px solid var(--ink);
+          padding-top: 18px;
+        }
+        .cols article:first-child {
+          border-top: none;
+          padding-top: 0;
+        }
+        nav a {
+          margin-left: 14px;
+        }
       }
       @media (prefers-reduced-motion: reduce) {
+        .strip .track {
+          animation: none;
+        }
         .cta {
           transition: none;
         }
-        .cta:hover {
+        .cta.primary:hover,
+        .cta.secondary:hover {
           transform: none;
         }
       }
@@ -216,8 +520,8 @@
     <div class="wrap">
       <header class="site">
         <a class="brand" href="/" aria-label="PointGoblin home">
-          <img src="/favicon.svg" alt="" width="36" height="36" />
-          <span>Point<b>Goblin</b></span>
+          <img src="/favicon.svg" alt="" width="38" height="38" />
+          <span>Point<em>Goblin</em></span>
         </a>
         <nav aria-label="Sections">
           <a href="#how">How it works</a>
@@ -228,44 +532,105 @@
 
       <main>
         <section class="hero">
-          <h1>
-            Planning poker for remote teams <span class="accent">without the anchoring.</span>
-          </h1>
-          <p>
-            PointGoblin is a free online planning poker tool built for scrum teams that estimate
-            from different places. Open a room, share one code, and let every person vote in secret.
-            When the host reveals, all cards land at the same moment, so the first voice in the call
-            never sets the price of the work.
-          </p>
-          <a class="cta" href="/app.html">Start a free room</a>
-          <a class="cta secondary" href="/app.html">Join with a code</a>
+          <div>
+            <p class="kicker" style="color: var(--brassdeep)">
+              Free planning poker · Remote teams · No sign up for guests
+            </p>
+            <h1>
+              Every card face down.
+              <span class="line2">Then, all at once.</span>
+            </h1>
+            <p class="lede">
+              PointGoblin is a free online planning poker tool built for scrum teams that estimate
+              from different places. Open a room, share one code, and let every person vote in
+              secret. When the host reveals, all cards land at the same moment, so the first voice
+              in the call never sets the price of the work.
+            </p>
+            <div class="cta-row">
+              <a class="cta primary" href="/app.html">Start a free room</a>
+              <a class="cta secondary" href="/app.html">Join with a code</a>
+            </div>
+          </div>
+          <div class="fan" aria-hidden="true">
+            <div class="fcard back c1"></div>
+            <div class="fcard back c2"></div>
+            <div class="fcard face c3"><small class="tl">8</small>8<small class="br">8</small></div>
+            <div class="fcard back c4"></div>
+            <div class="fcard back c5"></div>
+            <div class="stamp"><b>Fair by design</b><span>Hidden votes</span></div>
+          </div>
         </section>
+      </main>
+    </div>
 
+    <div class="strip" aria-hidden="true">
+      <div class="track">
+        <span class="row"
+          ><b>0</b><i>◆</i><b>1</b><i>◆</i><b>2</b><i>◆</i><b>3</b><i>◆</i><b>5</b><i>◆</i><b>8</b
+          ><i>◆</i><b>13</b><i>◆</i><b>21</b><i>◆</i><b>?</b><i>◆</i><b>Pass</b><i>◆</i></span
+        >
+        <span class="row"
+          ><b>0</b><i>◆</i><b>1</b><i>◆</i><b>2</b><i>◆</i><b>3</b><i>◆</i><b>5</b><i>◆</i><b>8</b
+          ><i>◆</i><b>13</b><i>◆</i><b>21</b><i>◆</i><b>?</b><i>◆</i><b>Pass</b><i>◆</i></span
+        >
+      </div>
+    </div>
+
+    <div class="wrap">
+      <div>
         <section class="block" id="how">
-          <h2>How a planning poker session runs</h2>
-          <ol class="steps">
-            <li>The host creates a room and adds the stories the team wants to size.</li>
+          <div class="block-head">
+            <h2>How a planning poker session runs</h2>
+            <span class="kicker" style="color: var(--brassdeep)">Five beats</span>
+          </div>
+          <ol class="rows">
             <li>
-              Teammates join as guests with the six character room code. No account, no install.
+              <span class="num">01</span>
+              <h3>Open the room</h3>
+              <p>The host creates a room and adds the stories the team wants to size.</p>
             </li>
             <li>
-              Everyone picks a card from the classic deck: 0, 1, 2, 3, 5, 8, 13, 21, a question
-              mark, or a pass.
+              <span class="num">02</span>
+              <h3>Share one code</h3>
+              <p>
+                Teammates join as guests with the six character room code. No account, no install.
+              </p>
             </li>
             <li>
-              The host reveals. PointGoblin shows every vote with the average and the agreement
-              level.
+              <span class="num">03</span>
+              <h3>Vote in secret</h3>
+              <p>
+                Everyone picks a card from the classic deck: 0, 1, 2, 3, 5, 8, 13, 21, a question
+                mark, or a pass.
+              </p>
             </li>
             <li>
-              The team talks about the gaps, votes again if needed, and moves to the next story.
+              <span class="num">04</span>
+              <h3>Reveal together</h3>
+              <p>
+                The host reveals. PointGoblin shows every vote with the average and the agreement
+                level.
+              </p>
+            </li>
+            <li>
+              <span class="num">05</span>
+              <h3>Talk, then move on</h3>
+              <p>
+                The team talks about the gaps, votes again if needed, and moves to the next story.
+              </p>
             </li>
           </ol>
         </section>
+      </div>
+    </div>
 
-        <section class="block" id="why">
+    <div class="band">
+      <div class="wrap">
+        <section class="block" id="why" style="padding-top: 38px">
           <h2>Why hidden votes make estimates better</h2>
-          <div class="grid">
-            <article class="card">
+          <div class="cols">
+            <article>
+              <span class="kicker">Fairness</span>
               <h3>Fair by design</h3>
               <p>
                 Anchoring is the quiet problem in sprint planning. One confident guess pulls every
@@ -273,7 +638,8 @@
                 much as loud ones.
               </p>
             </article>
-            <article class="card">
+            <article>
+              <span class="kicker">Consensus</span>
               <h3>Consensus you can see</h3>
               <p>
                 The reveal shows more than an average. The agreement level tells the team whether
@@ -281,7 +647,8 @@
                 conversation.
               </p>
             </article>
-            <article class="card">
+            <article>
+              <span class="kicker">Speed</span>
               <h3>Fast enough for real calls</h3>
               <p>
                 A room opens in seconds and every vote appears the moment it is cast. There is
@@ -291,9 +658,16 @@
             </article>
           </div>
         </section>
+      </div>
+    </div>
 
+    <div class="wrap">
+      <div>
         <section class="block" id="faq">
-          <h2>Planning poker questions, answered</h2>
+          <div class="block-head">
+            <h2>Planning poker questions, answered</h2>
+            <span class="kicker" style="color: var(--brassdeep)">Good to know</span>
+          </div>
           <details>
             <summary>What is planning poker?</summary>
             <p>
@@ -326,12 +700,19 @@
             </p>
           </details>
         </section>
-      </main>
-
-      <footer class="site">
-        <span>PointGoblin. Fair estimates for remote teams.</span>
-        <span>Developed by <a href="https://github.com/Abhisheklang">Abhisheklang</a></span>
-      </footer>
+      </div>
     </div>
+
+    <footer class="site">
+      <div class="wrap">
+        <div class="inner">
+          <div>
+            <span class="brandline">Point<em>Goblin</em></span>
+            <p>Fair estimates for remote teams, printed one reveal at a time.</p>
+          </div>
+          <span> Developed by <a href="https://github.com/Abhisheklang">Abhisheklang</a> </span>
+        </div>
+      </div>
+    </footer>
   </body>
 </html>
