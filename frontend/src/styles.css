@@ -1,24 +1,26 @@
 @import "tailwindcss";
 
 @theme {
-  --color-forest-950: #0b120c;
-  --color-forest-900: #101a12;
-  --color-forest-850: #14221a;
-  --color-forest-800: #1a2c20;
-  --color-forest-700: #274435;
-  --color-moss-500: #4c7a3f;
-  --color-goblin-400: #8bd450;
-  --color-goblin-300: #a9e178;
-  --color-cream-50: #eaf6e3;
-  --color-cream-300: #c3d6ba;
-  --color-muted-400: #93a98f;
-  --color-amber-soft: #e8c476;
-  --color-rose-soft: #e88f8f;
+  --color-paper: #f7f2e2;
+  --color-parchment: #efe6cc;
+  --color-card: #fffdf4;
+  --color-ink: #152a1e;
+  --color-inksoft: #5c6b57;
+  --color-evergreen: #17573a;
+  --color-evergreen-deep: #0d3524;
+  --color-felt: #0d3524;
+  --color-leaf: #6a994e;
+  --color-brass: #ce9f3e;
+  --color-brassdeep: #a67c2e;
+  --color-clay: #bc5837;
+  --color-line: #d9cfb2;
 
-  --font-sans: Inter, system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Fraunces", "Iowan Old Style", Georgia, serif;
+  --font-sans: "Inter Tight", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
 
-  --text-display: 2.5rem;
-  --text-title: 1.75rem;
+  --text-display: 2.75rem;
+  --text-title: 1.875rem;
   --text-heading: 1.25rem;
   --text-body: 1rem;
   --text-small: 0.875rem;
@@ -30,18 +32,53 @@
 }
 
 html {
-  background: var(--color-forest-950);
+  background: var(--color-paper);
 }
 
 body {
   font-family: var(--font-sans);
-  color: var(--color-cream-50);
+  color: var(--color-ink);
+  background-color: var(--color-paper);
+  background-image: radial-gradient(rgba(21, 42, 30, 0.055) 1px, transparent 1.4px);
+  background-size: 22px 22px;
+}
+
+::selection {
+  background: var(--color-brass);
+  color: var(--color-ink);
+}
+
+/* Print furniture: hard offset shadows and ink rules, like a card on paper. */
+.pg-print {
+  border: 1.5px solid var(--color-ink);
+  box-shadow: 6px 6px 0 rgba(21, 42, 30, 0.9);
+}
+
+.pg-print-sm {
+  border: 1.5px solid var(--color-ink);
+  box-shadow: 3px 3px 0 rgba(21, 42, 30, 0.9);
+}
+
+.pg-kicker {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+/* Card backs: a diamond lattice printed on deep felt green. */
+.pg-cardback {
+  background-color: var(--color-felt);
+  background-image:
+    repeating-linear-gradient(45deg, rgba(247, 242, 226, 0.09) 0 2px, transparent 2px 14px),
+    repeating-linear-gradient(-45deg, rgba(247, 242, 226, 0.09) 0 2px, transparent 2px 14px);
 }
 
 @keyframes pg-fade-up {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(12px);
   }
   to {
     opacity: 1;
@@ -52,7 +89,7 @@ body {
 @keyframes pg-pop-in {
   from {
     opacity: 0;
-    transform: scale(0.96);
+    transform: scale(0.94);
   }
   to {
     opacity: 1;
@@ -63,11 +100,11 @@ body {
 @keyframes pg-flip-in {
   from {
     opacity: 0;
-    transform: rotateX(72deg) translateY(6px);
+    transform: rotateY(88deg);
   }
   to {
     opacity: 1;
-    transform: rotateX(0deg) translateY(0);
+    transform: rotateY(0deg);
   }
 }
 
@@ -78,6 +115,30 @@ body {
   }
   50% {
     opacity: 0.9;
+  }
+}
+
+@keyframes pg-strip {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes pg-stamp-in {
+  0% {
+    opacity: 0;
+    transform: rotate(-14deg) scale(1.6);
+  }
+  60% {
+    opacity: 1;
+    transform: rotate(-8deg) scale(0.94);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(-8deg) scale(1);
   }
 }
 
@@ -93,29 +154,48 @@ body {
   animation: pg-pop-in var(--duration-base) var(--ease-out) both;
 }
 
+.pg-flip-scene {
+  perspective: 900px;
+}
+
 .pg-flip {
   animation: pg-flip-in var(--duration-reveal) var(--ease-out) both;
-  transform-origin: center bottom;
+  transform-origin: center center;
 }
 
 .pg-skeleton {
   animation: pg-pulse-soft 1200ms ease-in-out infinite;
 }
 
-.pg-card-btn {
+.pg-strip {
+  overflow: hidden;
+}
+
+.pg-strip-track {
+  display: inline-flex;
+  white-space: nowrap;
+  animation: pg-strip 30s linear infinite;
+}
+
+.pg-stamp {
+  animation: pg-stamp-in var(--duration-reveal) var(--ease-out) both;
+}
+
+/* Deck cards tilt like a held hand of cards and straighten on hover. */
+.pg-deck-card {
+  transform: rotate(var(--tilt, 0deg));
   transition:
     transform var(--duration-fast) var(--ease-out),
-    border-color var(--duration-fast) var(--ease-out),
     background-color var(--duration-fast) var(--ease-out),
     opacity var(--duration-fast) var(--ease-out);
 }
 
-.pg-card-btn:hover {
-  transform: translateY(-3px);
+.pg-deck-card:hover:not(:disabled) {
+  transform: rotate(0deg) translateY(-7px);
 }
 
-.pg-card-btn:active {
-  transform: translateY(0) scale(0.98);
+.pg-deck-card:active:not(:disabled) {
+  transform: rotate(0deg) translateY(-2px) scale(0.98);
 }
 
 .pg-btn {
@@ -126,7 +206,11 @@ body {
 }
 
 .pg-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
+  transform: translate(-1px, -1px);
+}
+
+.pg-btn:active:not(:disabled) {
+  transform: translate(1px, 1px);
 }
 
 .pg-btn:disabled {
@@ -134,22 +218,38 @@ body {
   cursor: not-allowed;
 }
 
+.pg-input {
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.pg-input:focus {
+  outline: 2px solid var(--color-brass);
+  outline-offset: 1px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .pg-enter,
   .pg-enter-slow,
   .pg-pop,
   .pg-flip,
-  .pg-skeleton {
+  .pg-skeleton,
+  .pg-stamp,
+  .pg-strip-track {
     animation: none;
   }
 
-  .pg-card-btn,
+  .pg-deck-card,
   .pg-btn {
     transition: none;
   }
 
-  .pg-card-btn:hover,
-  .pg-btn:hover:not(:disabled) {
+  .pg-deck-card:hover:not(:disabled),
+  .pg-btn:hover:not(:disabled),
+  .pg-btn:active:not(:disabled) {
+    transform: none;
+  }
+
+  .pg-deck-card {
     transform: none;
   }
 }
