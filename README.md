@@ -1,19 +1,22 @@
-# PointGoblin: Planning Poker Online for Remote Teams
+# PointGoblin: Real Time Planning Poker, a Backend Portfolio Project
 
-PointGoblin is a free online planning poker tool for agile teams that estimate work from different places. A host opens a room, teammates join as guests with a short code, everyone votes in secret, and the host reveals all cards at the same moment. The result shows every vote, the average, and how much the team agrees.
+PointGoblin is a real time planning poker application built as a backend portfolio project. It demonstrates a production style stack: FastAPI, WebSockets, Redis pub sub across two API instances, PostgreSQL, JWT auth, Docker and a React front end, load tested with 300 concurrent clients in one room. A host opens a room, teammates join as guests with a short code, everyone votes in secret, and the host reveals all cards at the same moment. The result shows every vote, the average, and how much the team agrees.
 
 ![Planning poker results with average and agreement](screenshots/planning-poker-results-average-and-agreement-desktop.png)
 
-## Why teams use planning poker
+## Background, and what this project demonstrates
 
-Estimation goes wrong when the first number spoken in a call pulls every later number toward it. Planning poker fixes that with one simple rule: nobody sees a vote until everybody has voted. PointGoblin keeps that rule at the centre of the product.
+Planning poker is an estimation technique built on one rule: nobody sees a vote until everybody has voted. The rule exists because of anchoring. The first number spoken in a call pulls every later number toward it, so the group ends up measuring confidence instead of the work. PointGoblin implements that rule in the protocol itself: before the reveal, room state carries voter names and a count, never values.
 
-* Fair by design, because hidden cards stop anchoring before it starts.
-* Guests join with a six character code. No account and no install for voters.
-* The reveal shows the average and the agreement level, so the team knows whether the number is settled or needs a conversation.
-* Rooms run live. A vote cast on one API instance reaches people connected to another instance through Redis.
+This repository is a backend portfolio project. It exists to demonstrate, with running code and measured numbers:
 
-## Features
+* A real time WebSocket API in FastAPI, with REST for accounts, rooms, and stories.
+* State shared across two API instances through Redis publish and subscribe, proven by a cross instance check.
+* Server side enforcement of hidden votes, reveal maths, and agreement scoring.
+* Authentication split by role: JWT accounts for hosts, scoped guest tokens for one room.
+* Load behaviour measured, not asserted: 300 concurrent clients in one room, with connection, broadcast, and convergence timings in the load test section below.
+
+## What was built
 
 * Host accounts with registration and sign in, protected by hashed passwords and JSON Web Tokens.
 * Guest access with a scoped token that works for one room only.
@@ -25,7 +28,7 @@ Estimation goes wrong when the first number spoken in a call pulls every later n
 * Rate limiting on sign in and room creation.
 * A responsive interface that works on a phone, a tablet, and a large monitor, with motion that respects reduced motion settings.
 
-## How it works
+## How a demo session runs
 
 1. The host creates an account and opens a room.
 2. The host shares the six character room code with the team.
@@ -123,11 +126,18 @@ Measured on the development virtual machine used for this build (a small shared 
 
 A second script, `loadtest/cross_instance_check.py`, proves the scaling story: a guest connected to one API instance votes, and a host connected to a second instance receives the update through Redis.
 
+## Known limits
+
+* The Docker Compose file is written and validated, but Docker was not available in the build environment, so Compose itself was never run there. Every service in it was run and verified directly instead.
+* The display fonts load from a public font service at runtime. Fallbacks are declared, and the layout holds without them.
+* Screenshots and the recording were captured in a local trial configuration (SQLite with the in memory event bus). The PostgreSQL and Redis path was verified separately with two API instances.
+* There is no public deployment. All numbers in this README come from the local machine described in the load test section.
+
 ## Animation
 
-Motion in PointGoblin explains a change of state, nothing more. Durations and easing live in one place in the theme: 120 ms for small feedback, 200 ms for entrances, and 450 ms for the card reveal, which is the signature moment of the product. Animations use transforms and opacity only. When a person asks their system for reduced motion, the app honours it and the animations switch off.
+Motion in PointGoblin explains a change of state, nothing more. Durations and easing live in one place in the theme: 120 ms for small feedback, 200 ms for entrances, and 450 ms for the card reveal, which is the signature moment of the application. Animations use transforms and opacity only. When a person asks their system for reduced motion, the app honours it and the animations switch off.
 
-## Questions people ask
+## Technical notes
 
 ### What is planning poker?
 
@@ -174,7 +184,7 @@ backend/    FastAPI app with routes, services, repositories, and tests
 frontend/   React app plus the static landing page
 loadtest/   WebSocket load test and the cross instance check
 nginx/      Load balancer configuration for Compose
-screenshots/  Product screenshots used in this README
+screenshots/  Screenshots used in this README
 recordings/   A screen recording of a full live session
 ```
 

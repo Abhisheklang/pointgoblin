@@ -110,7 +110,9 @@ export default function Home({ onSession }: HomeProps) {
 
       <main className="grid flex-1 items-start gap-10 py-10 lg:grid-cols-2 lg:py-14">
         <section className="pg-enter">
-          <p className="pg-kicker text-brassdeep">Planning poker · Remote teams · Free</p>
+          <p className="pg-kicker text-brassdeep">
+            Real time planning poker · FastAPI · WebSockets · Redis
+          </p>
           <h1 className="mt-3 font-display text-[3.4rem] leading-[0.98] font-black sm:text-display">
             Cards down.
             <span className="block text-evergreen italic">Numbers honest.</span>
@@ -305,7 +307,7 @@ export default function Home({ onSession }: HomeProps) {
       </div>
 
       <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-line py-5 text-small text-inksoft">
-        <span>PointGoblin. Fair estimates for remote teams.</span>
+        <span>PointGoblin. A backend portfolio project.</span>
         <span>
           Developed by{" "}
           <a

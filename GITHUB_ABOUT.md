@@ -1,6 +1,6 @@
 # GitHub About text
 
-Free online planning poker for remote teams. Hidden votes, one reveal, and an average with an agreement score your whole team can defend. Built with FastAPI, WebSockets, Redis, PostgreSQL, and React.
+Real-time planning poker built as a backend portfolio project with FastAPI, WebSockets, Redis pub/sub, PostgreSQL, JWT auth, Docker and React. Hidden votes, live reveal and agreement scoring. Load tested with 300 concurrent clients in one room.
 
 ## Topics
 

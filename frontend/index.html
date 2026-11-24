@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Planning Poker Online · Free Scrum Estimation Rooms | PointGoblin</title>
+    <title>PointGoblin · Real Time Planning Poker, a Backend Portfolio Project</title>
     <meta
       name="description"
-      content="PointGoblin is a free online planning poker tool for remote teams. Create a scrum estimation room in seconds, invite guests with a code, vote in secret and reveal every story point at once."
+      content="PointGoblin is a real time planning poker project built with FastAPI, WebSockets, Redis and PostgreSQL. Open a room, invite guests with a code, vote in secret and reveal every story point at once."
     />
     <meta
       name="keywords"
@@ -17,14 +17,14 @@
     <meta property="og:title" content="Planning Poker Online · PointGoblin" />
     <meta
       property="og:description"
-      content="Fair scrum estimation for remote teams. Hidden votes, one reveal, a number the whole team can defend."
+      content="A real time planning poker application built as a backend portfolio project with FastAPI, WebSockets, Redis pub sub and PostgreSQL. Architecture, engineering decisions, load test results and a live demo."
     />
     <meta property="og:image" content="/icon-512.png" />
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content="Planning Poker Online · PointGoblin" />
     <meta
       name="twitter:description"
-      content="Create a free planning poker room, invite your team with a code and reveal every estimate at once."
+      content="Create a planning poker room, invite your team with a code and reveal every estimate at once."
     />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
@@ -42,8 +42,7 @@
         "name": "PointGoblin",
         "applicationCategory": "BusinessApplication",
         "operatingSystem": "Any",
-        "description": "Free online planning poker for remote agile teams. Hidden votes, instant reveal, average and agreement for every story.",
-        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+        "description": "Real time planning poker for remote agile teams. Hidden votes, instant reveal, average and agreement for every story."
       }
     </script>
     <style>
@@ -458,6 +457,76 @@
         color: var(--paper);
         font-weight: 600;
       }
+      .proof {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 22px;
+        border-top: 2px solid var(--ink);
+        border-bottom: 2px solid var(--ink);
+        padding: 20px 0 6px;
+        margin-top: 44px;
+      }
+      .proof p {
+        margin: 0 0 12px;
+      }
+      .proof b {
+        display: block;
+        font-family: "Fraunces", Georgia, serif;
+        font-size: 2rem;
+        font-weight: 900;
+        color: var(--evergreen);
+      }
+      .proof span {
+        display: block;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.68rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--inksoft);
+        margin-top: 4px;
+        line-height: 1.5;
+      }
+      section.block p.body {
+        max-width: 70ch;
+        color: var(--inksoft);
+        line-height: 1.65;
+        margin: 0 0 14px;
+      }
+      .dtable {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 8px;
+      }
+      .dtable th,
+      .dtable td {
+        text-align: left;
+        padding: 10px 12px;
+        border-top: 1.5px solid var(--ink);
+        font-size: 0.95rem;
+      }
+      .dtable tr:last-child th,
+      .dtable tr:last-child td {
+        border-bottom: 1.5px solid var(--ink);
+      }
+      .dtable th {
+        font-weight: 600;
+        color: var(--ink);
+        width: 55%;
+      }
+      .dtable td {
+        font-family: "IBM Plex Mono", monospace;
+        color: var(--evergreen);
+      }
+      .cmd {
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.85rem;
+        background: var(--parchment);
+        border: 1.5px solid var(--ink);
+        padding: 12px 14px;
+        margin: 0 0 16px;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
       @media (max-width: 860px) {
         .hero {
           grid-template-columns: 1fr;
@@ -487,6 +556,9 @@
         .cols {
           grid-template-columns: 1fr;
           gap: 26px;
+        }
+        .proof {
+          grid-template-columns: 1fr 1fr;
         }
         .cols article {
           padding: 0;
@@ -524,9 +596,11 @@
           <span>Point<em>Goblin</em></span>
         </a>
         <nav aria-label="Sections">
-          <a href="#how">How it works</a>
-          <a href="#why">Why hidden votes</a>
-          <a href="#faq">Questions</a>
+          <a href="#overview">Overview</a>
+          <a href="#demo">Live demo</a>
+          <a href="#architecture">Architecture</a>
+          <a href="#loadtest">Load test</a>
+          <a href="#run">Run locally</a>
         </nav>
       </header>
 
@@ -534,21 +608,22 @@
         <section class="hero">
           <div>
             <p class="kicker" style="color: var(--brassdeep)">
-              Free planning poker · Remote teams · No sign up for guests
+              Real time planning poker · FastAPI · WebSockets · Redis
             </p>
             <h1>
-              Every card face down.
-              <span class="line2">Then, all at once.</span>
+              Real time planning poker.
+              <span class="line2">Built as a backend project.</span>
             </h1>
             <p class="lede">
-              PointGoblin is a free online planning poker tool built for scrum teams that estimate
-              from different places. Open a room, share one code, and let every person vote in
-              secret. When the host reveals, all cards land at the same moment, so the first voice
-              in the call never sets the price of the work.
+              PointGoblin is a real time planning poker application built to demonstrate a
+              production style backend. FastAPI and WebSockets serve the rooms, Redis pub sub
+              carries events between two API instances, PostgreSQL stores the record, and JWT auth
+              separates hosts from guests. This page is the case study: architecture, engineering
+              decisions, load test results, and a working live demo.
             </p>
             <div class="cta-row">
-              <a class="cta primary" href="/app.html">Start a free room</a>
-              <a class="cta secondary" href="/app.html">Join with a code</a>
+              <a class="cta primary" href="/app.html">Open the live demo</a>
+              <a class="cta secondary" href="#loadtest">Read the load test</a>
             </div>
           </div>
           <div class="fan" aria-hidden="true">
@@ -557,8 +632,14 @@
             <div class="fcard face c3"><small class="tl">8</small>8<small class="br">8</small></div>
             <div class="fcard back c4"></div>
             <div class="fcard back c5"></div>
-            <div class="stamp"><b>Fair by design</b><span>Hidden votes</span></div>
+            <div class="stamp"><b>Hidden votes</b><span>One reveal</span></div>
           </div>
+        </section>
+        <section class="proof" aria-label="Key measurements">
+          <p><b>300</b><span>concurrent clients connected in one room</span></p>
+          <p><b>192 ms</b><span>for one vote to reach all 300 clients</span></p>
+          <p><b>26</b><span>backend tests, all passing</span></p>
+          <p><b>2</b><span>API instances sharing one Redis event bus</span></p>
         </section>
       </main>
     </div>
@@ -578,46 +659,59 @@
 
     <div class="wrap">
       <div>
-        <section class="block" id="how">
+        <section class="block" id="overview">
           <div class="block-head">
-            <h2>How a planning poker session runs</h2>
-            <span class="kicker" style="color: var(--brassdeep)">Five beats</span>
+            <h2>Overview</h2>
+            <span class="kicker" style="color: var(--brassdeep)">What was built and why</span>
           </div>
+          <p class="body">
+            PointGoblin was built to demonstrate backend engineering on a small, complete system: a
+            real time API, state shared across processes, a database record, authentication, and
+            measured performance. Planning poker is the workload because it is genuinely real time.
+            Every participant holds a live connection, votes arrive at unpredictable moments, and
+            the reveal is a broadcast to the whole room at once.
+          </p>
+          <p class="body">
+            The rule it implements is simple. Each person picks a story point card in secret, and no
+            client can see any value until the host reveals. The server holds the vote values and
+            never sends them before the reveal, so the rule holds in the protocol, not only on the
+            screen. Hidden votes exist to stop anchoring, the pull that the first spoken number
+            exerts on every later estimate.
+          </p>
           <ol class="rows">
             <li>
               <span class="num">01</span>
-              <h3>Open the room</h3>
-              <p>The host creates a room and adds the stories the team wants to size.</p>
-            </li>
-            <li>
-              <span class="num">02</span>
-              <h3>Share one code</h3>
+              <h3>Rooms and guests</h3>
               <p>
-                Teammates join as guests with the six character room code. No account, no install.
+                Hosts register and sign in. Guests join a room with a six character code and a
+                scoped token that works for that room only.
               </p>
             </li>
             <li>
+              <span class="num">02</span>
+              <h3>Story queue</h3>
+              <p>The host adds stories to a queue and chooses which story is being voted on.</p>
+            </li>
+            <li>
               <span class="num">03</span>
-              <h3>Vote in secret</h3>
+              <h3>Hidden voting</h3>
               <p>
-                Everyone picks a card from the classic deck: 0, 1, 2, 3, 5, 8, 13, 21, a question
-                mark, or a pass.
+                The deck runs 0, 1, 2, 3, 5, 8, 13, 21, a question mark, and a pass card. The room
+                shows who has voted and never what they picked.
               </p>
             </li>
             <li>
               <span class="num">04</span>
-              <h3>Reveal together</h3>
+              <h3>Reveal and record</h3>
               <p>
-                The host reveals. PointGoblin shows every vote with the average and the agreement
-                level.
+                The host reveal computes the average and the agreement score on the server and
+                writes the results to PostgreSQL.
               </p>
             </li>
             <li>
               <span class="num">05</span>
-              <h3>Talk, then move on</h3>
-              <p>
-                The team talks about the gaps, votes again if needed, and moves to the next story.
-              </p>
+              <h3>Presence</h3>
+              <p>Room membership lives in Redis with an expiry, separate from the stored record.</p>
             </li>
           </ol>
         </section>
@@ -626,36 +720,47 @@
 
     <div class="band">
       <div class="wrap">
-        <section class="block" id="why" style="padding-top: 38px">
-          <h2>Why hidden votes make estimates better</h2>
-          <div class="cols">
-            <article>
-              <span class="kicker">Fairness</span>
-              <h3>Fair by design</h3>
+        <section class="block" id="demo" style="padding-top: 38px">
+          <div class="block-head">
+            <h2>Live demo</h2>
+            <span class="kicker" style="color: var(--brassdeep)">The working application</span>
+          </div>
+          <p class="body">
+            The demo is the application itself, running against the API described on this page. It
+            takes two browser windows to show the real time behaviour: one window as the host, one
+            as a guest.
+          </p>
+          <ol class="rows">
+            <li>
+              <span class="num">01</span>
+              <h3>Register and create a room</h3>
+              <p>Open the demo, register as a host, and create a room. Note the room code.</p>
+            </li>
+            <li>
+              <span class="num">02</span>
+              <h3>Join as a guest</h3>
+              <p>In a second window, join with the room code and a display name. No account.</p>
+            </li>
+            <li>
+              <span class="num">03</span>
+              <h3>Add a story and vote</h3>
               <p>
-                Anchoring is the quiet problem in sprint planning. One confident guess pulls every
-                later guess toward it. Hidden cards remove that pull, so quiet engineers count as
-                much as loud ones.
+                The host adds a story and activates it. Both windows vote. Each window shows a card
+                count and no values.
               </p>
-            </article>
-            <article>
-              <span class="kicker">Consensus</span>
-              <h3>Consensus you can see</h3>
+            </li>
+            <li>
+              <span class="num">04</span>
+              <h3>Reveal</h3>
               <p>
-                The reveal shows more than an average. The agreement level tells the team whether
-                the number is settled or whether the spread hides a misunderstanding worth a short
-                conversation.
+                The host reveals. Both windows flip every card at the same moment and show the
+                average and the agreement score.
               </p>
-            </article>
-            <article>
-              <span class="kicker">Speed</span>
-              <h3>Fast enough for real calls</h3>
-              <p>
-                A room opens in seconds and every vote appears the moment it is cast. There is
-                nothing to install and nothing to configure, which keeps the ceremony inside the
-                planning call where it belongs.
-              </p>
-            </article>
+            </li>
+          </ol>
+          <div class="cta-row" style="margin-top: 26px">
+            <a class="cta primary" href="/app.html">Open the live demo</a>
+            <a class="cta secondary" href="/app.html">Join with a code</a>
           </div>
         </section>
       </div>
@@ -663,42 +768,274 @@
 
     <div class="wrap">
       <div>
-        <section class="block" id="faq">
+        <section class="block" id="architecture">
           <div class="block-head">
-            <h2>Planning poker questions, answered</h2>
-            <span class="kicker" style="color: var(--brassdeep)">Good to know</span>
+            <h2>Architecture</h2>
+            <span class="kicker" style="color: var(--brassdeep)">Request and event flow</span>
           </div>
-          <details>
-            <summary>What is planning poker?</summary>
-            <p>
-              Planning poker is an estimation technique from agile software development. The team
-              discusses a story, then each person secretly picks a card with a story point value.
-              All cards are revealed together and the team agrees on one estimate.
-            </p>
-          </details>
-          <details>
-            <summary>Do guests need an account to vote?</summary>
-            <p>
-              No. Only the host needs an account. Guests join with the room code and a display name,
-              and they can vote right away.
-            </p>
-          </details>
-          <details>
-            <summary>Why does the deck jump from 8 to 13 to 21?</summary>
-            <p>
-              The deck follows a rounded growth sequence. Bigger work is harder to size precisely,
-              so the gaps between cards grow with the numbers. It keeps the team honest about
-              uncertainty.
-            </p>
-          </details>
-          <details>
-            <summary>What do average and agreement mean?</summary>
-            <p>
-              The average is the mean of the numeric votes, ignoring question marks and passes.
-              Agreement is the share of numeric votes that match the most common value. High
-              agreement means the team already sees the story the same way.
-            </p>
-          </details>
+          <ol class="rows">
+            <li>
+              <span class="num">01</span>
+              <h3>Browser</h3>
+              <p>
+                The React app calls REST endpoints for accounts and room setup, then holds one
+                WebSocket connection per participant for live room state.
+              </p>
+            </li>
+            <li>
+              <span class="num">02</span>
+              <h3>API</h3>
+              <p>
+                FastAPI routes call services, services call repositories, and repositories own the
+                queries. Pydantic schemas validate every request and response.
+              </p>
+            </li>
+            <li>
+              <span class="num">03</span>
+              <h3>Database</h3>
+              <p>
+                PostgreSQL, through SQLAlchemy, stores users, rooms, stories, and votes. Results are
+                written at reveal time. WebSocket handlers use short lived sessions, so a connected
+                client never holds a database connection.
+              </p>
+            </li>
+            <li>
+              <span class="num">04</span>
+              <h3>Event bus</h3>
+              <p>
+                Every room event is published to Redis. Each API process keeps one shared
+                subscription connection and fans messages out to its local sockets.
+              </p>
+            </li>
+            <li>
+              <span class="num">05</span>
+              <h3>Second instance</h3>
+              <p>
+                A client connected to one instance receives events handled by another instance
+                through Redis. The cross instance check in the loadtest folder proves this against
+                two live processes.
+              </p>
+            </li>
+          </ol>
+          <h2 style="margin-top: 40px">Engineering decisions and trade offs</h2>
+          <div class="cols" style="margin-top: 18px">
+            <article>
+              <span class="kicker">Scaling</span>
+              <h3>Redis pub sub across instances</h3>
+              <p>
+                Keeping room events in process memory would cap the system at one API process.
+                Publishing to Redis costs a network hop per event and buys horizontal scaling: any
+                instance can serve any client.
+              </p>
+            </article>
+            <article>
+              <span class="kicker">Load</span>
+              <h3>Broadcast coalescing</h3>
+              <p>
+                The first load test delivered 221,413 messages for 300 clients, because every join
+                triggered a full state broadcast. Coalescing triggers inside a 75 ms window into one
+                broadcast of the latest state cut delivery to 5,151 messages.
+              </p>
+            </article>
+            <article>
+              <span class="kicker">Correctness</span>
+              <h3>Hidden state on the server</h3>
+              <p>
+                Before the reveal, room state contains voter names and a count, never values. Hiding
+                values only in the interface would let any client read them from network traffic, so
+                the withholding happens in the API itself.
+              </p>
+            </article>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div class="band">
+      <div class="wrap">
+        <section class="block" id="loadtest" style="padding-top: 38px">
+          <div class="block-head">
+            <h2>Load test</h2>
+            <span class="kicker" style="color: var(--brassdeep)">Method and results</span>
+          </div>
+          <p class="body">
+            The load test script, in the loadtest folder of the repository, opens WebSocket clients
+            against one room on one API process, measures connection time, times a single vote
+            travelling to every client, then has every client vote at once and times full
+            convergence. It ran on the development virtual machine used for this build, a small
+            shared box, against local PostgreSQL and Redis.
+          </p>
+          <table class="dtable">
+            <tbody>
+              <tr>
+                <th scope="row">Clients connected</th>
+                <td>300 of 300</td>
+              </tr>
+              <tr>
+                <th scope="row">Connect time, median</th>
+                <td>474 ms</td>
+              </tr>
+              <tr>
+                <th scope="row">Connect time, 95th percentile</th>
+                <td>1,440 ms</td>
+              </tr>
+              <tr>
+                <th scope="row">One vote reaching all 300 clients</th>
+                <td>192 ms</td>
+              </tr>
+              <tr>
+                <th scope="row">300 clients voting at once, convergence</th>
+                <td>2.23 s</td>
+              </tr>
+              <tr>
+                <th scope="row">State messages delivered</th>
+                <td>5,151</td>
+              </tr>
+              <tr>
+                <th scope="row">Server errors</th>
+                <td>0</td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="body" style="margin-top: 16px">
+            A second script proves the scaling path separately: a guest connected to one API
+            instance votes, and a host connected to a second instance receives the update through
+            Redis.
+          </p>
+        </section>
+      </div>
+    </div>
+
+    <div class="wrap">
+      <div>
+        <section class="block" id="testing">
+          <div class="block-head">
+            <h2>Testing</h2>
+            <span class="kicker" style="color: var(--brassdeep)">What was verified</span>
+          </div>
+          <div class="cols">
+            <article>
+              <span class="kicker">Backend</span>
+              <h3>26 tests, all passing</h3>
+              <p>
+                Accounts and auth take 8 tests, room flow 7, voting rules and reveal maths 8, and a
+                live WebSocket session with two clients in one room takes 3.
+              </p>
+            </article>
+            <article>
+              <span class="kicker">Static gates</span>
+              <h3>Lint, format, types</h3>
+              <p>
+                Ruff and Black on the Python code, ESLint and Prettier on the frontend, and a strict
+                TypeScript production build. All run in CI on every push.
+              </p>
+            </article>
+            <article>
+              <span class="kicker">Responsive</span>
+              <h3>Four widths, zero overflow</h3>
+              <p>
+                Landing, demo entry, and room screens were checked at 360, 768, 1280, and 1920
+                pixels wide, with zero horizontal overflow and the full deck usable at 360.
+              </p>
+            </article>
+          </div>
+        </section>
+
+        <section class="block" id="limits">
+          <div class="block-head">
+            <h2>Known limits</h2>
+            <span class="kicker" style="color: var(--brassdeep)">Stated plainly</span>
+          </div>
+          <ol class="rows">
+            <li>
+              <span class="num">01</span>
+              <h3>Docker Compose not run here</h3>
+              <p>
+                The Compose file is written and validated, but Docker was not available in the build
+                environment, so it was never run there. Every service in it was run and verified
+                directly instead.
+              </p>
+            </li>
+            <li>
+              <span class="num">02</span>
+              <h3>Fonts load at runtime</h3>
+              <p>
+                The display fonts load from a public font service when the page opens. Fallbacks are
+                declared, and the layout holds without them.
+              </p>
+            </li>
+            <li>
+              <span class="num">03</span>
+              <h3>Trial configuration for media</h3>
+              <p>
+                Screenshots and the recording were captured against SQLite with the in memory event
+                bus. The PostgreSQL and Redis path was verified separately, with two API instances.
+              </p>
+            </li>
+            <li>
+              <span class="num">04</span>
+              <h3>No public deployment</h3>
+              <p>
+                The project runs locally or under Compose. Nothing here is hosted, and the numbers
+                on this page come from the local machine described in the load test section.
+              </p>
+            </li>
+          </ol>
+        </section>
+
+        <section class="block" id="stack">
+          <div class="block-head">
+            <h2>Tech stack</h2>
+            <span class="kicker" style="color: var(--brassdeep)">What it is built with</span>
+          </div>
+          <div class="cols">
+            <article>
+              <span class="kicker">Backend</span>
+              <h3>Python and FastAPI</h3>
+              <p>
+                FastAPI on Python 3.12, served by uvicorn. SQLAlchemy over PostgreSQL, Redis for pub
+                sub and presence, PyJWT and bcrypt for auth, Pydantic for schemas.
+              </p>
+            </article>
+            <article>
+              <span class="kicker">Frontend</span>
+              <h3>React and TypeScript</h3>
+              <p>
+                React with strict TypeScript, built by Vite and styled with Tailwind CSS and a small
+                token based design system. This landing page is static HTML.
+              </p>
+            </article>
+            <article>
+              <span class="kicker">Infrastructure</span>
+              <h3>Compose and CI</h3>
+              <p>
+                Docker Compose runs PostgreSQL, Redis, two API replicas, the frontend, and an nginx
+                load balancer. Tests and lint run in GitHub Actions.
+              </p>
+            </article>
+          </div>
+        </section>
+
+        <section class="block" id="run">
+          <div class="block-head">
+            <h2>Run locally</h2>
+            <span class="kicker" style="color: var(--brassdeep)">Two ways</span>
+          </div>
+          <p class="body">With Docker Compose, from the repository root:</p>
+          <p class="cmd">cp .env.example .env &nbsp;·&nbsp; docker compose up --build</p>
+          <p class="body">
+            Then open localhost:8080. Without Docker, run the backend with Python 3.11 or newer,
+            PostgreSQL, and Redis:
+          </p>
+          <p class="cmd">
+            cd backend &nbsp;·&nbsp; uvicorn app.main:app --port 8000 &nbsp;·&nbsp; cd frontend
+            &nbsp;·&nbsp; npm run dev
+          </p>
+          <p class="body">
+            Then open localhost:5173. Setting EVENT_BUS to memory runs everything inside one
+            process, which is the configuration the test suite uses. Full instructions, including
+            environment variables, are in the README of the repository.
+          </p>
         </section>
       </div>
     </div>
@@ -708,7 +1045,7 @@
         <div class="inner">
           <div>
             <span class="brandline">Point<em>Goblin</em></span>
-            <p>Fair estimates for remote teams, printed one reveal at a time.</p>
+            <p>Real time planning poker, built as a backend portfolio project.</p>
           </div>
           <span> Developed by <a href="https://github.com/Abhisheklang">Abhisheklang</a> </span>
         </div>

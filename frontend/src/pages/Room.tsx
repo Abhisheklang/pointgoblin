@@ -311,7 +311,7 @@ export default function Room({ session, onLeave }: RoomProps) {
       )}
 
       <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-line py-5 text-small text-inksoft">
-        <span>PointGoblin. Fair estimates for remote teams.</span>
+        <span>PointGoblin. A backend portfolio project.</span>
         <span>
           Developed by{" "}
           <a
