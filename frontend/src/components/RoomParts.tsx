@@ -8,36 +8,49 @@ export function PresenceList({
   votedNames: string[];
 }) {
   if (participants.length === 0) {
-    return <p className="text-small text-muted-400">Waiting for people to arrive.</p>;
+    return <p className="text-small text-inksoft">Waiting for people to arrive.</p>;
   }
   return (
-    <ul className="flex flex-col gap-2" aria-label="People in this room">
-      {participants.map((person) => (
-        <li
-          key={person.key}
-          className="pg-pop flex items-center justify-between gap-2 rounded-lg bg-forest-850 px-3 py-2"
-        >
-          <span className="flex min-w-0 items-center gap-2">
-            <span
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-forest-700 text-small font-bold text-goblin-300"
-              aria-hidden="true"
-            >
-              {person.name.charAt(0).toUpperCase()}
+    <ul className="flex flex-col gap-2.5" aria-label="People in this room">
+      {participants.map((person) => {
+        const hasVoted = votedNames.includes(person.name);
+        return (
+          <li
+            key={person.key}
+            className="pg-pop flex items-center justify-between gap-2 border-[1.5px] border-ink bg-card px-3 py-2"
+          >
+            <span className="flex min-w-0 items-center gap-2.5">
+              <span
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-display text-body font-bold ${
+                  person.is_host ? "bg-brass text-ink" : "bg-evergreen text-paper"
+                }`}
+                aria-hidden="true"
+              >
+                {person.name.charAt(0).toUpperCase()}
+              </span>
+              <span className="min-w-0">
+                <span className="block truncate text-body leading-tight font-medium">
+                  {person.name}
+                </span>
+                {person.is_host && (
+                  <span className="pg-kicker block text-[0.58rem] text-brassdeep">Host</span>
+                )}
+              </span>
             </span>
-            <span className="truncate text-body">
-              {person.name}
-              {person.is_host && <span className="text-muted-400"> · host</span>}
-            </span>
-          </span>
-          {votedNames.includes(person.name) ? (
-            <span className="shrink-0 rounded-full bg-goblin-400 px-2 py-0.5 text-small font-semibold text-forest-950">
-              Voted
-            </span>
-          ) : (
-            <span className="shrink-0 text-small text-muted-400">Thinking</span>
-          )}
-        </li>
-      ))}
+            {hasVoted ? (
+              <span className="flex shrink-0 items-center gap-1.5">
+                <span
+                  className="pg-cardback inline-block h-5 w-3.5 rounded-[3px] border border-ink"
+                  aria-hidden="true"
+                />
+                <span className="pg-kicker text-[0.62rem] text-evergreen">Card in</span>
+              </span>
+            ) : (
+              <span className="pg-kicker shrink-0 text-[0.62rem] text-inksoft">Thinking</span>
+            )}
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -53,39 +66,46 @@ export function StoryQueue({
 }) {
   if (stories.length === 0) {
     return (
-      <p className="text-small text-muted-400">
+      <p className="text-small text-inksoft">
         No stories yet. The host adds the first story and voting opens right away.
       </p>
     );
   }
   return (
-    <ul className="flex flex-col gap-2" aria-label="Story queue">
-      {stories.map((story) => (
+    <ol className="flex flex-col" aria-label="Story queue">
+      {stories.map((story, index) => (
         <li
           key={story.id}
-          className="pg-pop flex items-center justify-between gap-2 rounded-lg bg-forest-850 px-3 py-2"
+          className={`pg-pop flex items-center justify-between gap-3 border-b border-line py-2.5 last:border-b-0 ${
+            story.status === "active" || story.status === "revealed" ? "bg-parchment/70" : ""
+          }`}
         >
-          <span className="min-w-0">
-            <span className="block truncate text-body">{story.title}</span>
-            <span className="text-small text-muted-400">
-              {story.status === "active" && "Voting now"}
-              {story.status === "revealed" && "Revealed"}
-              {story.status === "pending" && "Waiting"}
-              {story.status === "done" && "Finished"}
+          <span className="flex min-w-0 items-baseline gap-3">
+            <span className="font-display text-heading font-bold text-brassdeep" aria-hidden="true">
+              {String(index + 1).padStart(2, "0")}
+            </span>
+            <span className="min-w-0">
+              <span className="block truncate text-body font-medium">{story.title}</span>
+              <span className="pg-kicker text-[0.62rem] text-inksoft">
+                {story.status === "active" && "Voting now"}
+                {story.status === "revealed" && "Revealed"}
+                {story.status === "pending" && "Waiting"}
+                {story.status === "done" && "Finished"}
+              </span>
             </span>
           </span>
           {isHost && story.status === "pending" && (
             <button
               type="button"
               onClick={() => onActivate(story.id)}
-              className="pg-btn shrink-0 rounded-md bg-forest-700 px-2.5 py-1.5 text-small font-semibold text-cream-50 hover:bg-moss-500"
+              className="pg-btn pg-print-sm shrink-0 bg-paper px-2.5 py-1.5 text-small font-semibold text-ink hover:bg-parchment"
             >
               Start
             </button>
           )}
         </li>
       ))}
-    </ul>
+    </ol>
   );
 }
 
@@ -95,36 +115,54 @@ export function ResultsPanel({ round }: { round: RoundState }) {
     return null;
   }
   return (
-    <section aria-label="Results" className="pg-enter rounded-xl bg-forest-850 p-4 sm:p-5">
-      <h3 className="text-heading font-semibold">Results</h3>
-      <div className="mt-3 flex flex-wrap gap-6">
+    <section aria-label="Results" className="pg-enter pg-print relative bg-card p-5 sm:p-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-small text-muted-400">Average</p>
-          <p className="text-display leading-none font-bold text-goblin-400">
-            {results.average === null ? "·" : results.average}
-          </p>
+          <p className="pg-kicker text-brassdeep">The reveal</p>
+          <div className="mt-2 flex items-end gap-3">
+            <p className="font-display text-[4.2rem] leading-[0.85] font-black text-ink">
+              {results.average === null ? "·" : results.average}
+            </p>
+            <p className="pb-1 text-small font-medium text-inksoft">
+              average of
+              <br />
+              the table
+            </p>
+          </div>
         </div>
-        <div>
-          <p className="text-small text-muted-400">Agreement</p>
-          <p className="text-display leading-none font-bold text-goblin-400">
-            {results.agreement === null ? "·" : `${results.agreement}%`}
-          </p>
-        </div>
-      </div>
-      <ul className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-        {results.votes.map((vote, index) => (
-          <li
-            key={vote.name}
-            className="pg-flip rounded-lg bg-forest-950 px-3 py-3 text-center"
-            style={{ animationDelay: `${index * 60}ms` }}
+        {results.agreement !== null && (
+          <div
+            className="pg-stamp flex h-24 w-24 shrink-0 flex-col items-center justify-center rounded-full border-[3px] border-double border-evergreen text-evergreen"
+            role="img"
+            aria-label={`Agreement ${results.agreement} percent`}
           >
-            <span className="block text-title leading-none font-bold">{vote.value}</span>
-            <span className="mt-1 block truncate text-small text-muted-400">{vote.name}</span>
-          </li>
-        ))}
-      </ul>
+            <span className="font-display text-title leading-none font-black">
+              {results.agreement}%
+            </span>
+            <span className="pg-kicker mt-1 text-[0.55rem]">Agreement</span>
+          </div>
+        )}
+      </div>
+      <div className="pg-flip-scene mt-5">
+        <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+          {results.votes.map((vote, index) => (
+            <li
+              key={vote.name}
+              className="pg-flip border-[1.5px] border-ink bg-paper px-3 py-3 text-center"
+              style={{ animationDelay: `${index * 70}ms` }}
+            >
+              <span className="block font-display text-title leading-none font-black">
+                {vote.value === "pass" ? "Pass" : vote.value}
+              </span>
+              <span className="pg-kicker mt-1.5 block truncate text-[0.6rem] text-inksoft">
+                {vote.name}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
       {results.votes.length === 0 && (
-        <p className="mt-3 text-small text-muted-400">Nobody voted on this story.</p>
+        <p className="mt-3 text-small text-inksoft">Nobody voted on this story.</p>
       )}
     </section>
   );
@@ -132,11 +170,11 @@ export function ResultsPanel({ round }: { round: RoundState }) {
 
 export function RoomSkeleton() {
   return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[320px_1fr]" aria-hidden="true">
-      <div className="pg-skeleton h-64 rounded-xl bg-forest-850" />
-      <div className="flex flex-col gap-4">
-        <div className="pg-skeleton h-24 rounded-xl bg-forest-850" />
-        <div className="pg-skeleton h-48 rounded-xl bg-forest-850" />
+    <div className="grid grid-cols-1 gap-5 lg:grid-cols-[330px_1fr]" aria-hidden="true">
+      <div className="pg-skeleton h-64 border-[1.5px] border-line bg-parchment" />
+      <div className="flex flex-col gap-5">
+        <div className="pg-skeleton h-24 border-[1.5px] border-line bg-parchment" />
+        <div className="pg-skeleton h-56 border-[1.5px] border-line bg-parchment" />
       </div>
     </div>
   );

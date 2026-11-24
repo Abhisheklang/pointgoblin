@@ -78,21 +78,23 @@ export default function Room({ session, onLeave }: RoomProps) {
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-6xl flex-col px-4 sm:px-6">
-      <header className="flex flex-wrap items-center justify-between gap-3 py-5">
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b-2 border-ink py-4">
         <Logo />
         <div className="flex items-center gap-3">
           <span
-            className={`rounded-full px-2.5 py-1 text-small font-semibold ${
-              connected ? "bg-forest-800 text-goblin-300" : "bg-forest-800 text-rose-soft"
-            }`}
+            className="flex items-center gap-2 border-[1.5px] border-ink bg-card px-2.5 py-1.5"
             role="status"
           >
-            {connected ? "Live" : "Connecting"}
+            <span
+              className={`h-2 w-2 rounded-full ${connected ? "bg-evergreen" : "bg-clay"}`}
+              aria-hidden="true"
+            />
+            <span className="pg-kicker text-[0.62rem]">{connected ? "Live" : "Connecting"}</span>
           </span>
           <button
             type="button"
             onClick={onLeave}
-            className="pg-btn rounded-lg bg-forest-850 px-3 py-2 text-small font-semibold text-cream-300 hover:bg-forest-800"
+            className="pg-btn pg-print-sm bg-paper px-3 py-2 text-small font-semibold text-ink hover:bg-parchment"
           >
             Leave room
           </button>
@@ -100,39 +102,47 @@ export default function Room({ session, onLeave }: RoomProps) {
       </header>
 
       {state === null ? (
-        <RoomSkeleton />
+        <div className="pt-6">
+          <RoomSkeleton />
+        </div>
       ) : (
-        <main className="pg-enter flex flex-1 flex-col gap-5 pb-8">
-          <section className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <h1 className="text-title font-bold">{state.room.name}</h1>
-              <p className="mt-1 text-small text-muted-400">
+        <main className="pg-enter flex flex-1 flex-col gap-5 py-6">
+          <section className="flex flex-wrap items-end justify-between gap-4">
+            <div className="min-w-0">
+              <p className="pg-kicker text-brassdeep">Planning poker room</p>
+              <h1 className="mt-1 font-display text-4xl font-black break-words">
+                {state.room.name}
+              </h1>
+              <p className="mt-1.5 text-small text-inksoft">
                 Hosted by {state.room.host_name ?? "your host"} · You are {session.name}
               </p>
             </div>
             <button
               type="button"
               onClick={copyCode}
-              className="pg-btn rounded-lg bg-forest-850 px-3 py-2 text-left"
+              className="pg-btn pg-print-sm bg-ink px-4 py-2.5 text-left text-paper"
               aria-label={`Copy room code ${state.room.code}`}
             >
-              <span className="block text-small text-muted-400">Room code</span>
-              <span className="block text-heading font-bold tracking-[0.25em]">
+              <span className="pg-kicker block text-[0.6rem] text-paper/60">Room code</span>
+              <span className="block font-mono text-heading font-bold tracking-[0.3em]">
                 {state.room.code}
               </span>
             </button>
           </section>
           {notice && (
-            <p role="status" className="text-small text-goblin-300">
+            <p role="status" className="text-small font-semibold text-evergreen">
               {notice}
             </p>
           )}
 
-          <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[320px_1fr]">
-            <div className="flex flex-col gap-4">
-              <section aria-label="Participants" className="rounded-xl bg-forest-900 p-4">
-                <h2 className="text-heading font-semibold">
-                  People <span className="text-muted-400">({state.participants.length})</span>
+          <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[330px_1fr]">
+            <div className="flex flex-col gap-5">
+              <section aria-label="Participants" className="pg-print bg-card p-4">
+                <h2 className="flex items-baseline justify-between font-display text-heading font-bold">
+                  At the table
+                  <span className="pg-kicker text-[0.62rem] text-inksoft">
+                    {state.participants.length} seated
+                  </span>
                 </h2>
                 <div className="mt-3">
                   <PresenceList
@@ -142,9 +152,9 @@ export default function Room({ session, onLeave }: RoomProps) {
                 </div>
               </section>
 
-              <section aria-label="Stories" className="rounded-xl bg-forest-900 p-4">
-                <h2 className="text-heading font-semibold">Story queue</h2>
-                <div className="mt-3">
+              <section aria-label="Stories" className="pg-print bg-card p-4">
+                <h2 className="font-display text-heading font-bold">Story queue</h2>
+                <div className="mt-2">
                   <StoryQueue
                     stories={state.stories}
                     isHost={isHost}
@@ -161,11 +171,11 @@ export default function Room({ session, onLeave }: RoomProps) {
                       value={storyTitle}
                       onChange={(event) => setStoryTitle(event.target.value)}
                       placeholder="Add a story"
-                      className="min-w-0 flex-1 rounded-lg border border-forest-700 bg-forest-950 px-3 py-2 text-body focus:border-goblin-400 focus:outline-none"
+                      className="pg-input min-w-0 flex-1 border-[1.5px] border-ink bg-paper px-3 py-2 text-body placeholder:text-inksoft"
                     />
                     <button
                       type="submit"
-                      className="pg-btn shrink-0 rounded-lg bg-forest-700 px-3 py-2 font-semibold hover:bg-moss-500"
+                      className="pg-btn pg-print-sm shrink-0 bg-evergreen px-3.5 py-2 font-semibold text-paper hover:bg-felt"
                     >
                       Add
                     </button>
@@ -174,27 +184,71 @@ export default function Room({ session, onLeave }: RoomProps) {
               </section>
             </div>
 
-            <div className="flex flex-col gap-4">
-              <section aria-label="Voting" className="rounded-xl bg-forest-900 p-4 sm:p-5">
+            <div className="flex flex-col gap-5">
+              <section aria-label="Voting" className="pg-print bg-felt p-5 text-paper sm:p-7">
                 {activeStory ? (
                   <>
-                    <p className="text-small font-semibold text-muted-400">Now voting on</p>
-                    <h2 className="mt-1 text-heading font-semibold break-words">
-                      {activeStory.title}
-                    </h2>
-                    <p className="mt-2 text-small text-muted-400">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="pg-kicker text-brass">Now voting on</p>
+                        <h2 className="mt-1.5 font-display text-title leading-snug font-bold break-words">
+                          {activeStory.title}
+                        </h2>
+                      </div>
+                      <p className="pg-kicker pt-1 text-[0.62rem] text-paper/60">
+                        {state.round?.revealed
+                          ? "Cards face up"
+                          : `${state.round?.vote_count ?? 0} of ${state.participants.length} cards in`}
+                      </p>
+                    </div>
+                    <p className="mt-2 max-w-lg text-small text-paper/70">
                       {state.round?.revealed
-                        ? "Cards are face up. Talk it through, then reset or move on."
-                        : `${state.round?.vote_count ?? 0} of ${state.participants.length} people have voted. Cards stay face down until the host reveals.`}
+                        ? "Talk it through, then reset the round or move to the next story."
+                        : "Pick a card. It stays face down until the host calls the reveal."}
                     </p>
+
+                    <ul className="mt-5 flex flex-wrap gap-2" aria-label="Seats at the table">
+                      {state.participants.map((person) => {
+                        const hasVoted = (state.round?.voted ?? []).includes(person.name);
+                        return (
+                          <li
+                            key={person.key}
+                            className="pg-pop flex items-center gap-2 rounded-full border border-paper/35 py-1 pr-3 pl-1"
+                          >
+                            <span
+                              className={`flex h-6 w-6 items-center justify-center rounded-full text-[0.7rem] font-bold ${
+                                person.is_host ? "bg-brass text-ink" : "bg-paper text-ink"
+                              }`}
+                              aria-hidden="true"
+                            >
+                              {person.name.charAt(0).toUpperCase()}
+                            </span>
+                            <span className="max-w-28 truncate text-small">{person.name}</span>
+                            <span
+                              className={`inline-block h-4 w-2.5 rounded-[2px] border ${
+                                hasVoted
+                                  ? "border-brass bg-brass"
+                                  : "border-paper/50 bg-transparent"
+                              }`}
+                              aria-hidden="true"
+                            />
+                            <span className="sr-only">
+                              {hasVoted ? "has voted" : "has not voted"}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+
                     <div
-                      className="mt-4 grid grid-cols-5 gap-2 sm:gap-3"
+                      className="mt-6 grid grid-cols-5 gap-2.5 pt-2 sm:gap-3.5"
                       role="group"
                       aria-label="Pick your card"
                     >
-                      {state.deck.map((value) => {
+                      {state.deck.map((value, index) => {
                         const selected = myVote === value;
                         const faceUp = state.round?.revealed ?? false;
+                        const tilt = (index < 5 ? index - 2 : 7 - index) * 1.1;
                         return (
                           <button
                             key={value}
@@ -202,11 +256,12 @@ export default function Room({ session, onLeave }: RoomProps) {
                             disabled={faceUp}
                             onClick={() => handleVote(value)}
                             aria-pressed={selected}
-                            className={`pg-card-btn flex aspect-[3/4] min-h-14 items-center justify-center rounded-xl border-2 text-title font-bold sm:text-display ${
+                            style={{ "--tilt": `${tilt}deg` } as React.CSSProperties}
+                            className={`pg-deck-card flex aspect-[3/4] min-h-14 items-center justify-center overflow-hidden rounded-lg border-2 font-display text-[1.3rem] font-black sm:text-title lg:text-display ${
                               selected
-                                ? "border-goblin-400 bg-goblin-400 text-forest-950"
-                                : "border-forest-700 bg-forest-850 text-cream-50 hover:border-moss-500"
-                            } ${faceUp ? "opacity-70" : ""}`}
+                                ? "border-brass bg-brass text-ink"
+                                : "border-ink bg-card text-ink hover:bg-parchment"
+                            } ${faceUp ? "opacity-60" : ""}`}
                           >
                             {value === "pass" ? "Pass" : value}
                           </button>
@@ -214,12 +269,12 @@ export default function Room({ session, onLeave }: RoomProps) {
                       })}
                     </div>
                     {isHost && (
-                      <div className="mt-4 flex flex-wrap gap-2">
+                      <div className="mt-6 flex flex-wrap gap-2.5 border-t border-paper/25 pt-5">
                         <button
                           type="button"
                           disabled={state.round?.revealed || (state.round?.vote_count ?? 0) === 0}
                           onClick={() => send({ action: "reveal" })}
-                          className="pg-btn rounded-lg bg-goblin-400 px-4 py-2.5 font-bold text-forest-950 hover:bg-goblin-300"
+                          className="pg-btn border-[1.5px] border-ink bg-brass px-5 py-2.5 font-bold text-ink hover:bg-paper"
                         >
                           Reveal cards
                         </button>
@@ -229,7 +284,7 @@ export default function Room({ session, onLeave }: RoomProps) {
                             setMyVote(null);
                             send({ action: "reset" });
                           }}
-                          className="pg-btn rounded-lg bg-forest-700 px-4 py-2.5 font-semibold hover:bg-moss-500"
+                          className="pg-btn border-[1.5px] border-paper/60 px-4 py-2.5 font-semibold text-paper hover:bg-paper/10"
                         >
                           Reset round
                         </button>
@@ -237,9 +292,10 @@ export default function Room({ session, onLeave }: RoomProps) {
                     )}
                   </>
                 ) : (
-                  <div className="py-6 text-center">
-                    <h2 className="text-heading font-semibold">No story is live yet</h2>
-                    <p className="mx-auto mt-2 max-w-sm text-body text-muted-400">
+                  <div className="py-8 text-center">
+                    <p className="pg-kicker text-brass">The table is set</p>
+                    <h2 className="mt-2 font-display text-title font-bold">No story is live yet</h2>
+                    <p className="mx-auto mt-2 max-w-sm text-body text-paper/70">
                       {isHost
                         ? "Add a story from the queue panel and voting opens at once."
                         : "The host is preparing the first story. Your cards will appear here."}
@@ -254,12 +310,12 @@ export default function Room({ session, onLeave }: RoomProps) {
         </main>
       )}
 
-      <footer className="flex flex-wrap items-center justify-between gap-2 py-5 text-small text-muted-400">
+      <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-line py-5 text-small text-inksoft">
         <span>PointGoblin. Fair estimates for remote teams.</span>
         <span>
           Developed by{" "}
           <a
-            className="font-semibold text-cream-300 hover:text-goblin-300"
+            className="font-semibold text-ink hover:text-evergreen"
             href="https://github.com/Abhisheklang"
           >
             Abhisheklang

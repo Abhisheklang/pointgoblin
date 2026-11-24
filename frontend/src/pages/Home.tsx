@@ -10,6 +10,31 @@ interface HomeProps {
 
 type Mode = "create" | "join";
 
+const DECK_STRIP = ["0", "1", "2", "3", "5", "8", "13", "21", "?", "Pass"];
+
+function DeckStrip() {
+  const row = (hidden: boolean) => (
+    <span aria-hidden={hidden} className="flex shrink-0 items-center">
+      {DECK_STRIP.concat(DECK_STRIP).map((value, index) => (
+        <span key={index} className="flex items-center">
+          <span className="px-4 font-display text-heading font-black text-ink">{value}</span>
+          <span className="text-brassdeep" aria-hidden="true">
+            ◆
+          </span>
+        </span>
+      ))}
+    </span>
+  );
+  return (
+    <div className="pg-strip border-y-2 border-ink bg-parchment py-2.5" aria-hidden="true">
+      <div className="pg-strip-track">
+        {row(false)}
+        {row(true)}
+      </div>
+    </div>
+  );
+}
+
 export default function Home({ onSession }: HomeProps) {
   const [mode, setMode] = useState<Mode>("create");
   const [authName, setAuthName] = useState("");
@@ -68,48 +93,62 @@ export default function Home({ onSession }: HomeProps) {
   }
 
   const inputClass =
-    "w-full rounded-lg border border-forest-700 bg-forest-950 px-3 py-2.5 text-body text-cream-50 placeholder:text-muted-400 focus:border-goblin-400 focus:outline-none";
-  const labelClass = "block text-small font-semibold text-cream-300";
+    "pg-input w-full border-[1.5px] border-ink bg-paper px-3 py-2.5 text-body text-ink placeholder:text-inksoft";
+  const labelClass = "pg-kicker mb-1.5 block text-[0.65rem] text-inksoft";
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-6xl flex-col px-4 sm:px-6">
-      <header className="flex items-center justify-between py-5">
+      <header className="flex items-center justify-between border-b-2 border-ink py-4">
         <Logo />
-        <a href="/" className="text-small font-semibold text-muted-400 hover:text-cream-50">
+        <a
+          href="/"
+          className="pg-kicker text-[0.65rem] text-inksoft transition-colors hover:text-evergreen"
+        >
           About planning poker
         </a>
       </header>
 
-      <main className="grid flex-1 items-start gap-10 py-8 lg:grid-cols-2 lg:py-14">
+      <main className="grid flex-1 items-start gap-10 py-10 lg:grid-cols-2 lg:py-14">
         <section className="pg-enter">
-          <h1 className="text-display leading-tight font-bold">
-            Estimate together.
-            <span className="block text-goblin-400">Reveal all at once.</span>
+          <p className="pg-kicker text-brassdeep">Planning poker · Remote teams · Free</p>
+          <h1 className="mt-3 font-display text-[3.4rem] leading-[0.98] font-black sm:text-display">
+            Cards down.
+            <span className="block text-evergreen italic">Numbers honest.</span>
           </h1>
-          <p className="mt-4 max-w-md text-body text-cream-300">
+          <p className="mt-5 max-w-md text-body leading-relaxed text-inksoft">
             PointGoblin runs a planning poker session the fair way. Everyone picks a card in secret,
             the host reveals the whole table in one go, and the team lands on one number it can
             defend.
           </p>
-          <ul className="mt-6 flex flex-col gap-3 text-body text-cream-300">
-            <li>Votes stay hidden, so the loudest voice cannot anchor the room.</li>
-            <li>Guests join with a six character code. No account needed.</li>
-            <li>Average and agreement appear the moment the cards flip.</li>
-          </ul>
+          <div className="mt-8">
+            {[
+              ["01", "Votes stay hidden, so the loudest voice cannot anchor the room."],
+              ["02", "Guests join with a six character code. No account needed."],
+              ["03", "Average and agreement appear the moment the cards flip."],
+            ].map(([num, text]) => (
+              <p
+                key={num}
+                className="flex items-baseline gap-4 border-t border-line py-3 text-body last:border-b"
+              >
+                <span className="font-display text-heading font-black text-brassdeep">{num}</span>
+                <span>{text}</span>
+              </p>
+            ))}
+          </div>
+          <div className="mt-8 hidden lg:block">
+            <DeckStrip />
+          </div>
         </section>
 
-        <section
-          className="pg-enter rounded-2xl bg-forest-900 p-5 shadow-xl sm:p-6"
-          aria-label="Start"
-        >
-          <div className="grid grid-cols-2 gap-2" role="tablist" aria-label="Choose how to start">
+        <section className="pg-enter pg-print bg-card p-5 sm:p-7" aria-label="Start">
+          <div className="grid grid-cols-2 gap-2.5" role="tablist" aria-label="Choose how to start">
             <button
               type="button"
               role="tab"
               aria-selected={mode === "create"}
               onClick={() => setMode("create")}
-              className={`pg-btn rounded-lg px-3 py-2.5 font-semibold ${
-                mode === "create" ? "bg-goblin-400 text-forest-950" : "bg-forest-850 text-cream-300"
+              className={`pg-btn border-[1.5px] border-ink px-3 py-2.5 font-display text-body font-bold ${
+                mode === "create" ? "bg-ink text-paper" : "bg-paper text-ink hover:bg-parchment"
               }`}
             >
               Create a room
@@ -119,8 +158,8 @@ export default function Home({ onSession }: HomeProps) {
               role="tab"
               aria-selected={mode === "join"}
               onClick={() => setMode("join")}
-              className={`pg-btn rounded-lg px-3 py-2.5 font-semibold ${
-                mode === "join" ? "bg-goblin-400 text-forest-950" : "bg-forest-850 text-cream-300"
+              className={`pg-btn border-[1.5px] border-ink px-3 py-2.5 font-display text-body font-bold ${
+                mode === "join" ? "bg-ink text-paper" : "bg-paper text-ink hover:bg-parchment"
               }`}
             >
               Join a room
@@ -130,14 +169,14 @@ export default function Home({ onSession }: HomeProps) {
           {error && (
             <p
               role="alert"
-              className="mt-4 rounded-lg bg-forest-850 px-3 py-2 text-small text-rose-soft"
+              className="mt-4 border-[1.5px] border-clay bg-paper px-3 py-2 text-small font-medium text-clay"
             >
               {error}
             </p>
           )}
 
           {mode === "create" ? (
-            <form onSubmit={handleCreate} className="mt-5 flex flex-col gap-4">
+            <form onSubmit={handleCreate} className="mt-6 flex flex-col gap-4">
               {!hasAccount && (
                 <div>
                   <label className={labelClass} htmlFor="auth-name">
@@ -201,14 +240,14 @@ export default function Home({ onSession }: HomeProps) {
               <button
                 type="submit"
                 disabled={busy}
-                className="pg-btn rounded-lg bg-goblin-400 px-4 py-3 font-bold text-forest-950 hover:bg-goblin-300"
+                className="pg-btn pg-print-sm mt-1 bg-evergreen px-4 py-3 font-display text-body font-bold text-paper hover:bg-felt"
               >
                 {busy ? "Opening your room..." : "Create room"}
               </button>
               <button
                 type="button"
                 onClick={() => setHasAccount(!hasAccount)}
-                className="text-small font-semibold text-muted-400 hover:text-cream-50"
+                className="text-small font-semibold text-inksoft underline underline-offset-4 hover:text-evergreen"
               >
                 {hasAccount
                   ? "New here? Create a host account instead."
@@ -216,7 +255,7 @@ export default function Home({ onSession }: HomeProps) {
               </button>
             </form>
           ) : (
-            <form onSubmit={handleJoin} className="mt-5 flex flex-col gap-4">
+            <form onSubmit={handleJoin} className="mt-6 flex flex-col gap-4">
               <div>
                 <label className={labelClass} htmlFor="guest-name">
                   Your name
@@ -237,7 +276,7 @@ export default function Home({ onSession }: HomeProps) {
                 </label>
                 <input
                   id="room-code"
-                  className={`${inputClass} tracking-[0.3em] uppercase`}
+                  className={`${inputClass} font-mono text-heading font-bold tracking-[0.3em] uppercase`}
                   value={roomCode}
                   onChange={(event) => setRoomCode(event.target.value.toUpperCase())}
                   required
@@ -249,11 +288,11 @@ export default function Home({ onSession }: HomeProps) {
               <button
                 type="submit"
                 disabled={busy}
-                className="pg-btn rounded-lg bg-goblin-400 px-4 py-3 font-bold text-forest-950 hover:bg-goblin-300"
+                className="pg-btn pg-print-sm mt-1 bg-evergreen px-4 py-3 font-display text-body font-bold text-paper hover:bg-felt"
               >
                 {busy ? "Joining..." : "Join room"}
               </button>
-              <p className="text-small text-muted-400">
+              <p className="text-small text-inksoft">
                 Ask the host for the code. It is the six characters at the top of their room.
               </p>
             </form>
@@ -261,12 +300,16 @@ export default function Home({ onSession }: HomeProps) {
         </section>
       </main>
 
-      <footer className="flex flex-wrap items-center justify-between gap-2 py-5 text-small text-muted-400">
+      <div className="pb-8 lg:hidden">
+        <DeckStrip />
+      </div>
+
+      <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-line py-5 text-small text-inksoft">
         <span>PointGoblin. Fair estimates for remote teams.</span>
         <span>
           Developed by{" "}
           <a
-            className="font-semibold text-cream-300 hover:text-goblin-300"
+            className="font-semibold text-ink hover:text-evergreen"
             href="https://github.com/Abhisheklang"
           >
             Abhisheklang
