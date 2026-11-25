@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { socketUrl } from "../api";
+import GithubIcon from "../components/GithubIcon";
 import Logo from "../components/Logo";
 import { PresenceList, ResultsPanel, RoomSkeleton, StoryQueue } from "../components/RoomParts";
 import type { RoomState, Session, SocketMessage } from "../types";
@@ -312,15 +313,15 @@ export default function Room({ session, onLeave }: RoomProps) {
 
       <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-line py-5 text-small text-inksoft">
         <span>PointGoblin. A backend portfolio project.</span>
-        <span>
-          Developed by{" "}
-          <a
-            className="font-semibold text-ink hover:text-evergreen"
-            href="https://github.com/Abhisheklang"
-          >
-            Abhisheklang
-          </a>
-        </span>
+        <a
+          className="inline-flex text-ink hover:text-evergreen"
+          href="https://github.com/Abhisheklang"
+          target="_blank"
+          rel="noreferrer"
+          aria-label="GitHub profile of Abhisheklang"
+        >
+          <GithubIcon />
+        </a>
       </footer>
     </div>
   );
