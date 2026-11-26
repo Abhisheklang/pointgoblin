@@ -3,7 +3,7 @@ services:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: pointgoblin
-      POSTGRES_PASSWORD: pointgoblin
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD to a strong random value}"
       POSTGRES_DB: pointgoblin
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -24,7 +24,7 @@ services:
   api1: &api
     build: ./backend
     environment: &api_env
-      DATABASE_URL: postgresql+psycopg://pointgoblin:pointgoblin@postgres:5432/pointgoblin
+      DATABASE_URL: "postgresql+psycopg://pointgoblin:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD to a strong random value}@postgres:5432/pointgoblin"
       REDIS_URL: redis://redis:6379/0
       EVENT_BUS: redis
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set to a strong random value}
