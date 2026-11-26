@@ -89,6 +89,7 @@ async def room_socket(websocket: WebSocket, code: str, token: str = "") -> None:
 
     subscription = None
     forward_task: asyncio.Task[None] | None = None
+    presence_task: asyncio.Task[None] | None = None
     presence_set = False
     try:
         # Every setup step runs inside the try whose finally removes the
@@ -129,12 +130,29 @@ async def room_socket(websocket: WebSocket, code: str, token: str = "") -> None:
                     return
 
         forward_task = asyncio.create_task(forward_events())
+
+        async def refresh_presence() -> None:
+            # Presence entries expire at presence_ttl_seconds so a crashed
+            # session does not linger as a ghost (wave 2). A live connection
+            # has to refresh its own entry well before that deadline, or it
+            # vanishes from the participant list while still connected and
+            # able to vote (PG-A1). Only this connection refreshes its own
+            # key, so a disconnected participant still expires on schedule.
+            interval = max(0.5, ws_settings.presence_ttl_seconds / 3)
+            while True:
+                await asyncio.sleep(interval)
+                await bus.set_presence(room_code, key, str(actor["name"]), is_host)
+
+        presence_task = asyncio.create_task(refresh_presence())
         message_limiter = MessageRateLimiter(
             ws_settings.ws_message_rate_limit, ws_settings.rate_window_seconds
         )
         try:
             while True:
                 raw = await websocket.receive_text()
+                # Any activity from a live connection also refreshes its
+                # presence entry, on top of the heartbeat above.
+                await bus.set_presence(room_code, key, str(actor["name"]), is_host)
                 if len(raw.encode("utf-8")) > ws_settings.ws_max_message_bytes:
                     logger.warning("Dropped an oversized websocket message")
                     continue
@@ -148,6 +166,8 @@ async def room_socket(websocket: WebSocket, code: str, token: str = "") -> None:
         except WebSocketDisconnect:
             pass
     finally:
+        if presence_task is not None:
+            presence_task.cancel()
         if forward_task is not None:
             forward_task.cancel()
         if subscription is not None:
