@@ -350,3 +350,40 @@ def test_s7_unknown_email_login_still_pays_bcrypt_cost(client, monkeypatch):
     assert response.status_code == 401
     assert len(seen_hashes) == 1
     assert seen_hashes[0] != DUMMY_PASSWORD_HASH
+
+
+# ---------------------------------------------------------------- S6 adjacent
+
+
+def test_s6_adjacent_overlong_passwords_are_validation_errors_not_500(client):
+    from fastapi.testclient import TestClient
+
+    raw_client = TestClient(client.app, raise_server_exceptions=False)
+    resp_ascii = raw_client.post(
+        "/api/auth/register",
+        json={"email": "longpw@example.com", "name": "Long", "password": "a" * 100},
+    )
+    assert resp_ascii.status_code == 422
+    # 44 characters but 84 UTF-8 bytes: the cap counts bytes, not characters.
+    resp_multi = raw_client.post(
+        "/api/auth/register",
+        json={"email": "longpw2@example.com", "name": "Long", "password": "é" * 40 + "tail"},
+    )
+    assert resp_multi.status_code == 422
+    # Exactly 72 bytes is accepted.
+    resp_edge = raw_client.post(
+        "/api/auth/register",
+        json={"email": "edgepw@example.com", "name": "Edge", "password": "a" * 72},
+    )
+    assert resp_edge.status_code == 201
+    resp_ok = raw_client.post(
+        "/api/auth/register",
+        json={"email": "normalpw@example.com", "name": "Norm", "password": "password123"},
+    )
+    assert resp_ok.status_code == 201
+    # Login applies the same cap as a validation error, never a 500.
+    resp_login = raw_client.post(
+        "/api/auth/login",
+        json={"email": "normalpw@example.com", "password": "a" * 100},
+    )
+    assert resp_login.status_code == 422

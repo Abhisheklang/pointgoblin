@@ -6,6 +6,17 @@ from pydantic import BaseModel, Field, field_validator
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
+# bcrypt hashes at most 72 bytes of password; bcrypt 5.x raises ValueError
+# past that instead of truncating. The cap is on UTF-8 byte length, not
+# character count, so a multibyte password counts every byte it encodes to.
+MAX_PASSWORD_BYTES = 72
+
+
+def check_password_byte_length(value: str) -> str:
+    if len(value.encode("utf-8")) > MAX_PASSWORD_BYTES:
+        raise ValueError("Password must be at most 72 bytes")
+    return value
+
 
 class RegisterRequest(BaseModel):
     email: str = Field(min_length=3, max_length=255)
@@ -19,10 +30,20 @@ class RegisterRequest(BaseModel):
             raise ValueError("Enter a valid email address")
         return value.lower()
 
+    @field_validator("password")
+    @classmethod
+    def check_password_bytes(cls, value: str) -> str:
+        return check_password_byte_length(value)
+
 
 class LoginRequest(BaseModel):
     email: str = Field(min_length=3, max_length=255)
     password: str = Field(min_length=1, max_length=128)
+
+    @field_validator("password")
+    @classmethod
+    def check_password_bytes(cls, value: str) -> str:
+        return check_password_byte_length(value)
 
 
 class TokenResponse(BaseModel):
