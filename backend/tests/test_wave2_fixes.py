@@ -315,3 +315,38 @@ def test_s5_memory_bus_presence_expires_per_participant(monkeypatch):
         assert await bus.get_presence("ROOM1") == []
 
     asyncio.run(run())
+
+
+# ---------------------------------------------------------------- S7
+
+
+def test_s7_unknown_email_login_still_pays_bcrypt_cost(client, monkeypatch):
+    from app.routes import auth as auth_route
+    from app.security import DUMMY_PASSWORD_HASH
+    from tests.conftest import register_host
+
+    register_host(client, email="timing@example.com")
+    seen_hashes = []
+    real_verify = auth_route.verify_password
+
+    def spy(password, password_hash):
+        seen_hashes.append(password_hash)
+        return real_verify(password, password_hash)
+
+    monkeypatch.setattr(auth_route, "verify_password", spy)
+    response = client.post(
+        "/api/auth/login",
+        json={"email": "nobody-here@example.com", "password": "whatever123"},
+    )
+    assert response.status_code == 401
+    # The unknown-email path verified against the dummy bcrypt hash.
+    assert seen_hashes == [DUMMY_PASSWORD_HASH]
+
+    seen_hashes.clear()
+    response = client.post(
+        "/api/auth/login",
+        json={"email": "timing@example.com", "password": "wrong-password"},
+    )
+    assert response.status_code == 401
+    assert len(seen_hashes) == 1
+    assert seen_hashes[0] != DUMMY_PASSWORD_HASH

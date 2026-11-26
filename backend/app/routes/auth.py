@@ -10,7 +10,7 @@ from app.config import get_settings
 from app.database import get_db
 from app.errors import unauthorized
 from app.rate_limit import limiter
-from app.security import create_user_token, hash_password, verify_password
+from app.security import DUMMY_PASSWORD_HASH, create_user_token, hash_password, verify_password
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -38,6 +38,11 @@ def login(
         get_settings().auth_rate_limit,
     )
     user = repositories.get_user_by_email(db, payload.email)
-    if user is None or not verify_password(payload.password, user.password_hash):
+    if user is None:
+        # Pay the same bcrypt cost as a wrong password for a real account,
+        # so timing does not disclose whether the email is registered.
+        verify_password(payload.password, DUMMY_PASSWORD_HASH)
+        raise unauthorized("Email or password is not correct")
+    if not verify_password(payload.password, user.password_hash):
         raise unauthorized("Email or password is not correct")
     return schemas.TokenResponse(access_token=create_user_token(user.id, user.name), name=user.name)

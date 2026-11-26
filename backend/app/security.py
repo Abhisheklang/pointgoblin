@@ -25,6 +25,13 @@ def verify_password(password: str, password_hash: str) -> bool:
         return False
 
 
+# Precomputed bcrypt hash of a throwaway password. The login route verifies
+# against this when the email is unknown, so the unknown-email path pays the
+# same bcrypt cost as the wrong-password path and response timing no longer
+# reveals whether an account exists.
+DUMMY_PASSWORD_HASH = bcrypt.hashpw(b"dummy-password-for-timing-parity", bcrypt.gensalt()).decode()
+
+
 def create_token(subject: str, name: str, scope: str, minutes: int, room_code: str = "") -> str:
     """Create a signed access token."""
     now = datetime.now(UTC)
