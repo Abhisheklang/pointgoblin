@@ -1,6 +1,8 @@
 """Application entry point."""
 
 import logging
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,7 +20,15 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 settings = get_settings()
 
-app = FastAPI(title="PointGoblin API", version="1.0.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    init_db()
+    logger.info("%s API is ready", settings.app_name)
+    yield
+
+
+app = FastAPI(title="PointGoblin API", version="1.0.0", lifespan=lifespan)
 app.add_exception_handler(AppError, app_error_handler)
 app.add_middleware(
     CORSMiddleware,
@@ -30,12 +40,6 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/api")
 app.include_router(rooms.router, prefix="/api")
 app.include_router(ws_router)
-
-
-@app.on_event("startup")
-def on_startup() -> None:
-    init_db()
-    logger.info("%s API is ready", settings.app_name)
 
 
 @app.get("/health")
