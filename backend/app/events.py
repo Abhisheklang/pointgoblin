@@ -233,9 +233,19 @@ class RedisBus(EventBus):
             value = await self._redis.get(redis_key)
             if value is None:
                 continue
-            item = json.loads(value)
+            # Parse defensively per entry (K5): one malformed or foreign
+            # value under the presence prefix must not break state
+            # assembly for the whole room. Skip it and log, so the bad
+            # entry degrades to a missing participant.
+            try:
+                item = json.loads(value)
+                name = item["name"]
+                is_host = item["is_host"]
+            except (json.JSONDecodeError, KeyError, TypeError):
+                logger.warning("Skipping a malformed presence value at %s", redis_key)
+                continue
             key = redis_key[len(prefix) :]
-            people.append({"id": display_id(key), "name": item["name"], "is_host": item["is_host"]})
+            people.append({"id": display_id(key), "name": name, "is_host": is_host})
         return people
 
 

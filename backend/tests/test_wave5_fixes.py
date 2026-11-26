@@ -269,3 +269,48 @@ def test_k3_forward_send_failure_ends_the_connection(client, host_and_room):
     state = client.get(f"/api/rooms/{code}", headers=headers).json()
     assert state["round"]["vote_count"] == 0
     assert json_lib.dumps(state)  # state stayed readable throughout
+
+
+# ---- K5: presence parsing skips malformed values ----
+
+
+class _AsyncFakeRedis:
+    """Minimal async Redis stand-in for the presence keys."""
+
+    def __init__(self):
+        self.store = {}
+
+    async def set(self, key, value, ex=None):
+        self.store[key] = value
+
+    async def get(self, key):
+        return self.store.get(key)
+
+    async def delete(self, key):
+        self.store.pop(key, None)
+
+    async def scan_iter(self, match=None):
+        import fnmatch
+
+        for key in list(self.store):
+            if match is None or fnmatch.fnmatch(key, match):
+                yield key
+
+
+def test_k5_get_presence_skips_malformed_values():
+    import asyncio
+
+    from app.events import RedisBus
+
+    async def run():
+        bus = RedisBus.__new__(RedisBus)
+        bus._redis = _AsyncFakeRedis()
+        await bus.set_presence("ROOMK5", "user:1", "Alice", True)
+        bus._redis.store["presence:ROOMK5:foreign:1"] = "this is not json"
+        bus._redis.store["presence:ROOMK5:foreign:2"] = '{"unexpected": "shape"}'
+        bus._redis.store["presence:ROOMK5:foreign:3"] = '["not", "an", "object"]'
+        people = await bus.get_presence("ROOMK5")
+        assert [person["name"] for person in people] == ["Alice"]
+        assert people[0]["is_host"] is True
+
+    asyncio.run(run())
