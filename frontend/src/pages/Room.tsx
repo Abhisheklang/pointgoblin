@@ -213,7 +213,7 @@ export default function Room({ session, onLeave }: RoomProps) {
                         const hasVoted = (state.round?.voted ?? []).includes(person.name);
                         return (
                           <li
-                            key={person.key}
+                            key={person.id}
                             className="pg-pop flex items-center gap-2 rounded-full border border-paper/35 py-1 pr-3 pl-1"
                           >
                             <span

@@ -7,6 +7,7 @@ falls back to process memory, which is handy for tests and local trials.
 """
 
 import asyncio
+import hashlib
 import json
 import logging
 from typing import Any
@@ -15,6 +16,16 @@ from app.config import get_settings
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
+
+
+def display_id(key: str) -> str:
+    """Opaque per-participant display id derived from the internal key.
+
+    The internal key is a user ID or guest subject and must never reach
+    clients; a truncated hash is stable for list rendering but reveals
+    nothing about the underlying identity.
+    """
+    return hashlib.sha256(key.encode()).hexdigest()[:16]
 
 
 class Subscription:
@@ -86,7 +97,7 @@ class MemoryBus(EventBus):
 
     async def get_presence(self, room_code: str) -> list[dict[str, Any]]:
         return [
-            {"key": key, "name": item["name"], "is_host": item["is_host"]}
+            {"id": display_id(key), "name": item["name"], "is_host": item["is_host"]}
             for key, item in self._presence.get(room_code, {}).items()
         ]
 
@@ -170,7 +181,7 @@ class RedisBus(EventBus):
         people = []
         for key, value in raw.items():
             item = json.loads(value)
-            people.append({"key": key, "name": item["name"], "is_host": item["is_host"]})
+            people.append({"id": display_id(key), "name": item["name"], "is_host": item["is_host"]})
         return people
 
 

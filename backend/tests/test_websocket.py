@@ -4,6 +4,8 @@ import json
 
 from conftest import auth_headers
 
+from app.security import decode_token
+
 
 def test_two_clients_see_each_other_vote_and_reveal(client, host_and_room):
     host, room = host_and_room
@@ -86,6 +88,23 @@ def test_oversized_message_is_ignored_and_socket_survives(client, host_and_room)
             if state.get("round") and state["round"]["vote_count"] == 1:
                 break
         assert state["round"]["vote_count"] == 1
+
+
+def test_room_state_does_not_leak_the_host_user_id(client, host_and_room):
+    host, room = host_and_room
+    code = room["room"]["code"]
+    guest = client.post("/api/rooms/join", json={"code": code, "name": "Ivy Insider"}).json()
+    host_id = decode_token(host["access_token"])["sub"]
+    with client.websocket_connect(f"/ws/rooms/{code}?token={host['access_token']}") as socket:
+        socket.receive_text()
+        state = client.get(f"/api/rooms/{code}", headers=auth_headers(guest["access_token"])).json()
+    participants = state["participants"]
+    assert participants, "host presence should be listed while connected"
+    for person in participants:
+        assert "key" not in person
+        assert person["id"]
+    assert host_id not in json.dumps(participants)
+    assert host_id not in json.dumps(state)
 
 
 def test_websocket_rejects_a_bad_token(client, host_and_room):

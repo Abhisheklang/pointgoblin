@@ -16,7 +16,7 @@ export function PresenceList({
         const hasVoted = votedNames.includes(person.name);
         return (
           <li
-            key={person.key}
+            key={person.id}
             className="pg-pop flex items-center justify-between gap-2 border-[1.5px] border-ink bg-card px-3 py-2"
           >
             <span className="flex min-w-0 items-center gap-2.5">

@@ -1,5 +1,5 @@
 export interface Participant {
-  key: string;
+  id: string;
   name: string;
   is_host: boolean;
 }
