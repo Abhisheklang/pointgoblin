@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app import repositories, schemas, services
 from app.config import get_settings
 from app.database import get_db
-from app.deps import get_actor, get_user_actor
+from app.deps import get_room_actor, get_user_actor
 from app.rate_limit import limiter
 from app.security import create_guest_token
 
@@ -43,7 +43,7 @@ async def join_room(
 
 @router.get("/{code}")
 async def get_room(
-    code: str, db: Session = Depends(get_db), actor: dict[str, Any] = Depends(get_actor)
+    code: str, db: Session = Depends(get_db), actor: dict[str, Any] = Depends(get_room_actor)
 ) -> dict[str, Any]:
     room = services.require_room(db, code)
     return await services.build_state(db, room)
@@ -54,7 +54,7 @@ async def add_story(
     code: str,
     payload: schemas.CreateStoryRequest,
     db: Session = Depends(get_db),
-    actor: dict[str, Any] = Depends(get_actor),
+    actor: dict[str, Any] = Depends(get_room_actor),
 ) -> dict[str, Any]:
     room = services.require_room(db, code)
     services.add_story(db, room, actor, payload.title)
@@ -66,7 +66,7 @@ async def activate_story(
     code: str,
     story_id: str,
     db: Session = Depends(get_db),
-    actor: dict[str, Any] = Depends(get_actor),
+    actor: dict[str, Any] = Depends(get_room_actor),
 ) -> dict[str, Any]:
     room = services.require_room(db, code)
     services.activate_story(db, room, actor, story_id)
@@ -78,7 +78,7 @@ async def vote(
     code: str,
     payload: schemas.VoteRequest,
     db: Session = Depends(get_db),
-    actor: dict[str, Any] = Depends(get_actor),
+    actor: dict[str, Any] = Depends(get_room_actor),
 ) -> dict[str, Any]:
     room = services.require_room(db, code)
     services.cast_vote(db, room, actor, payload.value)
@@ -87,7 +87,7 @@ async def vote(
 
 @router.post("/{code}/reveal")
 async def reveal(
-    code: str, db: Session = Depends(get_db), actor: dict[str, Any] = Depends(get_actor)
+    code: str, db: Session = Depends(get_db), actor: dict[str, Any] = Depends(get_room_actor)
 ) -> dict[str, Any]:
     room = services.require_room(db, code)
     services.reveal_votes(db, room, actor)
@@ -96,7 +96,7 @@ async def reveal(
 
 @router.post("/{code}/reset")
 async def reset(
-    code: str, db: Session = Depends(get_db), actor: dict[str, Any] = Depends(get_actor)
+    code: str, db: Session = Depends(get_db), actor: dict[str, Any] = Depends(get_room_actor)
 ) -> dict[str, Any]:
     room = services.require_room(db, code)
     services.reset_round(db, room, actor)

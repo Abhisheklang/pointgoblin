@@ -62,6 +62,23 @@ def test_host_activates_a_second_story(client, host_and_room):
     assert statuses["First"] == "done"
 
 
+def test_guest_token_from_another_room_is_rejected(client, host_and_room):
+    host, room = host_and_room
+    guest = join_guest(client, room["room"]["code"])
+    other = make_room(client, host["access_token"])
+    other_code = other["room"]["code"]
+    guest_headers = auth_headers(guest["access_token"])
+
+    read = client.get(f"/api/rooms/{other_code}", headers=guest_headers)
+    assert read.status_code == 403
+
+    vote = client.post(f"/api/rooms/{other_code}/vote", json={"value": "5"}, headers=guest_headers)
+    assert vote.status_code == 403
+
+    own = client.get(f"/api/rooms/{room['room']['code']}", headers=guest_headers)
+    assert own.status_code == 200
+
+
 def test_room_state_needs_a_token(client, host_and_room):
     _, room = host_and_room
     response = client.get(f"/api/rooms/{room['room']['code']}")
