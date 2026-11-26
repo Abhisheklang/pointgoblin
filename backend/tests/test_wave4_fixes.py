@@ -76,3 +76,30 @@ def test_pg_a2_binary_frame_does_not_kill_the_connection(client, host_and_room):
             if state.get("round") and state["round"]["vote_count"] == 1:
                 break
         assert state["round"]["vote_count"] == 1
+
+
+def test_pg_a3_nonfinite_float_in_login_payload_returns_422_not_500(client):
+    response = client.post(
+        "/api/auth/login",
+        content=b'{"email": "a@b.com", "password": 1e999}',
+        headers={"Content-Type": "application/json"},
+    )
+    assert response.status_code == 422
+
+
+def test_pg_a3_nan_in_register_payload_returns_422_not_500(client):
+    response = client.post(
+        "/api/auth/register",
+        content=b'{"email": "n@b.com", "name": NaN, "password": "password123"}',
+        headers={"Content-Type": "application/json"},
+    )
+    assert response.status_code == 422
+
+
+def test_pg_a3_infinity_in_register_payload_returns_422_not_500(client):
+    response = client.post(
+        "/api/auth/register",
+        content=b'{"email": "i@b.com", "name": "Ivy", "password": Infinity}',
+        headers={"Content-Type": "application/json"},
+    )
+    assert response.status_code == 422
