@@ -1,6 +1,7 @@
 """Wave 4 advanced audit fixes: regression tests for the confirmed findings."""
 
 import asyncio
+import json
 import time
 
 from app.config import get_settings
@@ -57,3 +58,21 @@ def test_pg_a1_disconnected_participant_leaves_the_list(client, host_and_room, m
         socket.receive_text()
         assert "Leaving Guest" in _participant_names(client, host, code)
     assert "Leaving Guest" not in _participant_names(client, host, code)
+
+
+def test_pg_a2_binary_frame_does_not_kill_the_connection(client, host_and_room):
+    host, room = host_and_room
+    code = room["room"]["code"]
+    headers = {"Authorization": f"Bearer {host['access_token']}"}
+    client.post(f"/api/rooms/{code}/stories", json={"title": "Binary proof"}, headers=headers)
+    guest = _join_guest(client, code, name="Binary Guest")
+    with client.websocket_connect(f"/ws/rooms/{code}?token={guest['access_token']}") as socket:
+        socket.receive_text()
+        socket.send_bytes(b"\x00\x01binary")
+        socket.send_text(json.dumps({"action": "vote", "value": "5"}))
+        state = {}
+        for _ in range(20):
+            state = json.loads(socket.receive_text())
+            if state.get("round") and state["round"]["vote_count"] == 1:
+                break
+        assert state["round"]["vote_count"] == 1

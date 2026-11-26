@@ -149,7 +149,16 @@ async def room_socket(websocket: WebSocket, code: str, token: str = "") -> None:
         )
         try:
             while True:
-                raw = await websocket.receive_text()
+                # Read raw messages and dispatch on type: receive_text()
+                # raises KeyError on a binary frame and kills the
+                # connection (PG-A2). Binary frames carry no action, so
+                # they are ignored and the connection survives.
+                message = await websocket.receive()
+                if message["type"] == "websocket.disconnect":
+                    raise WebSocketDisconnect(message.get("code", 1000))
+                if message["type"] != "websocket.receive" or "text" not in message:
+                    continue
+                raw = message["text"]
                 # Any activity from a live connection also refreshes its
                 # presence entry, on top of the heartbeat above.
                 await bus.set_presence(room_code, key, str(actor["name"]), is_host)
