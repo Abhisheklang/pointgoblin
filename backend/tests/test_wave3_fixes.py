@@ -27,6 +27,25 @@ def test_sec3_query_string_token_is_not_accepted(client, host_and_room):
     assert header.status_code == 200
 
 
+def test_sec2_rest_room_mutations_are_rate_limited(client, host_and_room, monkeypatch):
+    from app.config import get_settings
+
+    host, room = host_and_room
+    code = room["room"]["code"]
+    headers = {"Authorization": f"Bearer {host['access_token']}"}
+    settings = get_settings()
+    monkeypatch.setattr(settings, "rate_limit_enabled", True)
+    monkeypatch.setattr(settings, "room_mutation_rate_limit", 3)
+    statuses = [
+        client.post(
+            f"/api/rooms/{code}/stories", json={"title": f"Story {index}"}, headers=headers
+        ).status_code
+        for index in range(4)
+    ]
+    assert statuses[:3] == [201, 201, 201]
+    assert statuses[3] == 429
+
+
 def test_sec1_placeholders_still_work_in_dev_mode():
     settings = Settings(
         jwt_secret="replace-with-a-long-random-value",

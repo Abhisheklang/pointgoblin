@@ -1,5 +1,6 @@
 """Room and voting business logic, plus room state assembly."""
 
+import asyncio
 import statistics
 from typing import Any
 
@@ -110,8 +111,12 @@ def assemble_state(data: dict[str, Any], people: list[dict[str, Any]]) -> dict[s
 
 
 async def build_state(db: Session, room: Room) -> dict[str, Any]:
+    # collect_room_data is blocking database work: run it in a thread, the
+    # same pattern the websocket path uses, so REST callers never stall the
+    # event loop for socket traffic (V1).
+    data = await asyncio.to_thread(collect_room_data, db, room)
     people = await bus.get_presence(room.code)
-    return assemble_state(collect_room_data(db, room), people)
+    return assemble_state(data, people)
 
 
 async def broadcast_state(db: Session, room: Room) -> dict[str, Any]:
