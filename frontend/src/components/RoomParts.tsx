@@ -2,10 +2,10 @@ import type { Participant, RoundState, StoryItem } from "../types";
 
 export function PresenceList({
   participants,
-  votedNames,
+  votedIds,
 }: {
   participants: Participant[];
-  votedNames: string[];
+  votedIds: string[];
 }) {
   if (participants.length === 0) {
     return <p className="text-small text-inksoft">Waiting for people to arrive.</p>;
@@ -13,7 +13,7 @@ export function PresenceList({
   return (
     <ul className="flex flex-col gap-2.5" aria-label="People in this room">
       {participants.map((person) => {
-        const hasVoted = votedNames.includes(person.name);
+        const hasVoted = votedIds.includes(person.id);
         return (
           <li
             key={person.id}
@@ -147,7 +147,7 @@ export function ResultsPanel({ round }: { round: RoundState }) {
         <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
           {results.votes.map((vote, index) => (
             <li
-              key={vote.name}
+              key={vote.id}
               className="pg-flip border-[1.5px] border-ink bg-paper px-3 py-3 text-center"
               style={{ animationDelay: `${index * 70}ms` }}
             >

@@ -11,6 +11,7 @@ export interface StoryItem {
 }
 
 export interface VoteResult {
+  id: string;
   name: string;
   value: string;
 }
@@ -40,11 +41,18 @@ export interface RoomState {
 
 export interface YouMessage {
   type: "you";
+  id: string;
   name: string;
   is_host: boolean;
 }
 
-export type SocketMessage = RoomState | YouMessage;
+export interface ErrorMessage {
+  type: "error";
+  code: string;
+  message: string;
+}
+
+export type SocketMessage = RoomState | YouMessage | ErrorMessage;
 
 export interface Session {
   token: string;

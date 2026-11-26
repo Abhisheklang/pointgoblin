@@ -13,6 +13,7 @@ interface RoomProps {
 
 export default function Room({ session, onLeave }: RoomProps) {
   const [state, setState] = useState<RoomState | null>(null);
+  const myIdRef = useRef<string | null>(null);
   const [isHost, setIsHost] = useState(session.isHostAccount);
   const [myVote, setMyVote] = useState<string | null>(null);
   const [storyTitle, setStoryTitle] = useState("");
@@ -29,9 +30,15 @@ export default function Room({ session, onLeave }: RoomProps) {
       const message = JSON.parse(event.data) as SocketMessage;
       if (message.type === "you") {
         setIsHost(message.is_host);
+        myIdRef.current = message.id;
+      } else if (message.type === "error") {
+        setNotice(message.message);
       } else {
         setState(message);
-        if (message.round === null || !message.round.voted.includes(session.name)) {
+        if (
+          message.round === null ||
+          (myIdRef.current !== null && !message.round.voted.includes(myIdRef.current))
+        ) {
           setMyVote(null);
         }
       }
@@ -148,7 +155,7 @@ export default function Room({ session, onLeave }: RoomProps) {
                 <div className="mt-3">
                   <PresenceList
                     participants={state.participants}
-                    votedNames={state.round?.voted ?? []}
+                    votedIds={state.round?.voted ?? []}
                   />
                 </div>
               </section>
@@ -210,7 +217,7 @@ export default function Room({ session, onLeave }: RoomProps) {
 
                     <ul className="mt-5 flex flex-wrap gap-2" aria-label="Seats at the table">
                       {state.participants.map((person) => {
-                        const hasVoted = (state.round?.voted ?? []).includes(person.name);
+                        const hasVoted = (state.round?.voted ?? []).includes(person.id);
                         return (
                           <li
                             key={person.id}
