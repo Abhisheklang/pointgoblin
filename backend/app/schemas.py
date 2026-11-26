@@ -4,7 +4,10 @@ import re
 
 from pydantic import BaseModel, Field, field_validator
 
-EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+# The end anchor is \Z, not $: in Python $ also matches just before a
+# trailing newline, which let "a@b.com\n" validate as a distinct email
+# from "a@b.com" (PG-A4).
+EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+\Z")
 
 # bcrypt hashes at most 72 bytes of password; bcrypt 5.x raises ValueError
 # past that instead of truncating. The cap is on UTF-8 byte length, not
@@ -26,7 +29,10 @@ class RegisterRequest(BaseModel):
     @field_validator("email")
     @classmethod
     def check_email(cls, value: str) -> str:
-        if not EMAIL_RE.match(value):
+        # Reject surrounding whitespace outright instead of normalising
+        # it away: a stripped twin would silently alias an existing
+        # account, and a stored newline splits log lines (PG-A4).
+        if value != value.strip() or not EMAIL_RE.match(value):
             raise ValueError("Enter a valid email address")
         return value.lower()
 

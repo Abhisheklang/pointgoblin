@@ -103,3 +103,37 @@ def test_pg_a3_infinity_in_register_payload_returns_422_not_500(client):
         headers={"Content-Type": "application/json"},
     )
     assert response.status_code == 422
+
+
+def test_pg_a4_email_with_trailing_newline_is_rejected(client):
+    response = client.post(
+        "/api/auth/register",
+        json={"email": "dup@example.com\n", "name": "Two", "password": "password123"},
+    )
+    assert response.status_code == 422
+
+
+def test_pg_a4_newline_twin_cannot_register_as_a_second_account(client):
+    first = client.post(
+        "/api/auth/register",
+        json={"email": "twin@example.com", "name": "One", "password": "password123"},
+    )
+    assert first.status_code == 201
+    twin = client.post(
+        "/api/auth/register",
+        json={"email": "twin@example.com\n", "name": "Two", "password": "password123"},
+    )
+    assert twin.status_code == 422
+    login_twin = client.post(
+        "/api/auth/login", json={"email": "twin@example.com\n", "password": "password123"}
+    )
+    assert login_twin.status_code in (401, 422)
+
+
+def test_pg_a4_email_with_surrounding_whitespace_is_rejected(client):
+    for email in (" pad@example.com", "pad@example.com ", "pad@example.com\t"):
+        response = client.post(
+            "/api/auth/register",
+            json={"email": email, "name": "Pad", "password": "password123"},
+        )
+        assert response.status_code == 422, email
