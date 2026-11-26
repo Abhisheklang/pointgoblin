@@ -95,6 +95,14 @@ export default function Room({ session, onLeave }: RoomProps) {
     };
   }, [session.code, session.token, session.name]);
 
+  useEffect(() => {
+    if (!notice) {
+      return;
+    }
+    const timer = window.setTimeout(() => setNotice(""), 5000);
+    return () => window.clearTimeout(timer);
+  }, [notice]);
+
   function send(payload: Record<string, string>): boolean {
     const socket = socketRef.current;
     if (socket && socket.readyState === WebSocket.OPEN) {

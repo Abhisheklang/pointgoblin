@@ -148,7 +148,10 @@ export default function Home({ onSession }: HomeProps) {
               type="button"
               role="tab"
               aria-selected={mode === "create"}
-              onClick={() => setMode("create")}
+              onClick={() => {
+                setMode("create");
+                setError("");
+              }}
               className={`pg-btn border-[1.5px] border-ink px-3 py-2.5 font-display text-body font-bold ${
                 mode === "create" ? "bg-ink text-paper" : "bg-paper text-ink hover:bg-parchment"
               }`}
@@ -159,7 +162,10 @@ export default function Home({ onSession }: HomeProps) {
               type="button"
               role="tab"
               aria-selected={mode === "join"}
-              onClick={() => setMode("join")}
+              onClick={() => {
+                setMode("join");
+                setError("");
+              }}
               className={`pg-btn border-[1.5px] border-ink px-3 py-2.5 font-display text-body font-bold ${
                 mode === "join" ? "bg-ink text-paper" : "bg-paper text-ink hover:bg-parchment"
               }`}
@@ -223,7 +229,7 @@ export default function Home({ onSession }: HomeProps) {
                   required
                   minLength={hasAccount ? 1 : 8}
                   autoComplete={hasAccount ? "current-password" : "new-password"}
-                  placeholder="At least 8 characters"
+                  placeholder={hasAccount ? "Your password" : "At least 8 characters"}
                 />
               </div>
               <div>
@@ -248,7 +254,10 @@ export default function Home({ onSession }: HomeProps) {
               </button>
               <button
                 type="button"
-                onClick={() => setHasAccount(!hasAccount)}
+                onClick={() => {
+                  setHasAccount(!hasAccount);
+                  setError("");
+                }}
                 className="text-small font-semibold text-inksoft underline underline-offset-4 hover:text-evergreen"
               >
                 {hasAccount
