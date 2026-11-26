@@ -38,6 +38,10 @@ class Settings(BaseSettings):
     rate_window_seconds: int = 60
     ws_message_rate_limit: int = 120
     ws_max_message_bytes: int = 64 * 1024
+    # Largest legitimate HTTP payload in this API is a small JSON body
+    # (the longest field is a 200 character story title), so 64 KB is a
+    # generous cap; anything larger is refused before parsing (PG-S2).
+    max_request_body_bytes: int = 64 * 1024
     subscription_queue_maxsize: int = 50
     ws_send_timeout_seconds: float = 10
     presence_ttl_seconds: int = 300

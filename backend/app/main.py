@@ -78,6 +78,77 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         return response
 
 
+def _too_large_response() -> StarletteResponse:
+    return JSONResponse(
+        status_code=413,
+        content={
+            "error": {
+                "code": "payload_too_large",
+                "message": "That request body is too large.",
+            }
+        },
+    )
+
+
+class BodySizeLimitMiddleware:
+    """Refuse oversized HTTP request bodies before they are parsed (PG-S2).
+
+    Pure ASGI middleware. A declared Content-Length over the cap is
+    refused without reading the body at all. Otherwise the body is
+    streamed and counted as it arrives, and the request is refused the
+    moment it passes the cap, so at most the cap plus one chunk is ever
+    held in memory; bodies within the cap are replayed to the app
+    unchanged. Websocket scopes pass through untouched (the socket has
+    its own message size limit).
+    """
+
+    def __init__(self, app: Any, max_bytes: int) -> None:
+        self.app = app
+        self.max_bytes = max_bytes
+
+    async def __call__(self, scope: Any, receive: Any, send: Any) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        headers = {k.decode("latin-1").lower(): v.decode("latin-1") for k, v in scope["headers"]}
+        declared = headers.get("content-length")
+        if declared is not None:
+            try:
+                if int(declared) > self.max_bytes:
+                    await _too_large_response()(scope, receive, send)
+                    return
+            except ValueError:
+                pass
+        body = b""
+        more_body = True
+        pending: list[Any] = []
+        while more_body:
+            message = await receive()
+            if message["type"] != "http.request":
+                # A disconnect or other message: stop reading the body and
+                # hand the app this message first, then the rest of the
+                # stream as it arrives.
+                pending.append(message)
+                break
+            body += message.get("body", b"")
+            if len(body) > self.max_bytes:
+                await _too_large_response()(scope, receive, send)
+                return
+            more_body = message.get("more_body", False)
+        delivered = False
+
+        async def replay_receive() -> Any:
+            nonlocal delivered
+            if pending:
+                return pending.pop(0)
+            if not delivered:
+                delivered = True
+                return {"type": "http.request", "body": body, "more_body": False}
+            return await receive()
+
+        await self.app(scope, replay_receive, send)
+
+
 app = FastAPI(title="PointGoblin API", version="1.0.0", lifespan=lifespan)
 app.add_exception_handler(AppError, app_error_handler)
 app.add_exception_handler(RequestValidationError, validation_error_handler)
@@ -88,6 +159,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# Body size cap (PG-S2), added before the security headers middleware so
+# it runs inside it and its 413 responses still carry the headers.
+app.add_middleware(BodySizeLimitMiddleware, max_bytes=settings.max_request_body_bytes)
 # Added last so it runs outermost and also covers CORS preflight and
 # error responses.
 app.add_middleware(SecurityHeadersMiddleware)

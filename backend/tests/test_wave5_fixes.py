@@ -95,3 +95,44 @@ def test_sec6_host_still_reads_and_votes_and_reveal_stays_host_only(client, host
         headers=auth_headers(guest["access_token"]),
     )
     assert cross.status_code == 403
+
+
+# ---- PG-S2: HTTP body size limit ----
+
+
+def test_pg_s2_oversized_login_body_is_refused_with_413(client):
+    body = b'{"email": "a@b.com", "password": "' + b"x" * (200 * 1024) + b'"}'
+    response = client.post(
+        "/api/auth/login", content=body, headers={"Content-Type": "application/json"}
+    )
+    assert response.status_code == 413
+    assert response.json()["error"]["code"] == "payload_too_large"
+
+
+def test_pg_s2_oversized_chunked_body_is_refused_with_413(client):
+    def chunks():
+        yield b'{"email": "a@b.com", "password": "'
+        for _ in range(20):
+            yield b"x" * 8192
+        yield b'"}'
+
+    response = client.post(
+        "/api/auth/login", content=chunks(), headers={"Content-Type": "application/json"}
+    )
+    assert response.status_code == 413
+
+
+def test_pg_s2_normal_bodies_still_work(client, host_and_room):
+    host, room = host_and_room
+    code = room["room"]["code"]
+    login = client.post(
+        "/api/auth/login",
+        json={"email": "host@example.com", "password": "password123"},
+    )
+    assert login.status_code == 200
+    story = client.post(
+        f"/api/rooms/{code}/stories",
+        json={"title": "A perfectly normal story title"},
+        headers=auth_headers(host["access_token"]),
+    )
+    assert story.status_code == 201
