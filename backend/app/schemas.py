@@ -64,6 +64,14 @@ class JoinRoomRequest(BaseModel):
 class CreateStoryRequest(BaseModel):
     title: str = Field(min_length=1, max_length=200)
 
+    @field_validator("title")
+    @classmethod
+    def check_title(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("Story title must not be blank")
+        return value
+
 
 class VoteRequest(BaseModel):
     value: str = Field(min_length=1, max_length=8)
@@ -73,12 +81,3 @@ class RoomResponse(BaseModel):
     code: str
     name: str
     host_name: str | None = None
-
-
-class ErrorBody(BaseModel):
-    code: str
-    message: str
-
-
-class ErrorResponse(BaseModel):
-    error: ErrorBody
