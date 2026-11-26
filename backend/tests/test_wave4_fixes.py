@@ -137,3 +137,18 @@ def test_pg_a4_email_with_surrounding_whitespace_is_rejected(client):
             json={"email": email, "name": "Pad", "password": "password123"},
         )
         assert response.status_code == 422, email
+
+
+def test_pg_a5_security_headers_on_health_and_api_responses(client, host_and_room):
+    host, room = host_and_room
+    code = room["room"]["code"]
+    headers = {"Authorization": f"Bearer {host['access_token']}"}
+    for response in (
+        client.get("/health"),
+        client.get(f"/api/rooms/{code}", headers=headers),
+        client.get("/api/rooms/NOPE99", headers=headers),
+    ):
+        assert response.headers["x-content-type-options"] == "nosniff"
+        assert response.headers["x-frame-options"] == "DENY"
+        assert response.headers["referrer-policy"] == "no-referrer"
+        assert "frame-ancestors 'none'" in response.headers["content-security-policy"]

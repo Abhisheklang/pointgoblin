@@ -11,6 +11,8 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response as StarletteResponse
 
 from app.config import get_settings
 from app.database import init_db
@@ -57,6 +59,25 @@ async def validation_error_handler(request: Request, exc: RequestValidationError
     return JSONResponse(status_code=422, content={"detail": detail})
 
 
+# Baseline security headers for every HTTP response (PG-A5). The API
+# serves JSON only, so frame denial costs nothing; the websocket upgrade
+# is not an HTTP response and is untouched by this middleware.
+SECURITY_HEADERS = {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Content-Security-Policy": "frame-ancestors 'none'",
+    "Referrer-Policy": "no-referrer",
+}
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next) -> StarletteResponse:
+        response = await call_next(request)
+        for name, value in SECURITY_HEADERS.items():
+            response.headers.setdefault(name, value)
+        return response
+
+
 app = FastAPI(title="PointGoblin API", version="1.0.0", lifespan=lifespan)
 app.add_exception_handler(AppError, app_error_handler)
 app.add_exception_handler(RequestValidationError, validation_error_handler)
@@ -67,6 +88,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# Added last so it runs outermost and also covers CORS preflight and
+# error responses.
+app.add_middleware(SecurityHeadersMiddleware)
 app.include_router(auth.router, prefix="/api")
 app.include_router(rooms.router, prefix="/api")
 app.include_router(ws_router)
