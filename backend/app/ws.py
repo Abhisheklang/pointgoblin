@@ -134,6 +134,20 @@ async def room_socket(websocket: WebSocket, code: str, token: str = "") -> None:
                     except Exception:
                         pass
                     return
+                except Exception:
+                    # Any other send failure means the transport is broken
+                    # (K3): log it and close the socket. Returning ends the
+                    # forwarding task, and the receive loop below treats a
+                    # finished forwarding task as a dead connection, so the
+                    # client cannot keep voting blind on a half alive socket.
+                    logger.exception("Closing a websocket whose send failed")
+                    try:
+                        await asyncio.wait_for(
+                            websocket.close(), timeout=ws_settings.ws_send_timeout_seconds
+                        )
+                    except Exception:
+                        pass
+                    return
 
         forward_task = asyncio.create_task(forward_events())
 
@@ -159,7 +173,23 @@ async def room_socket(websocket: WebSocket, code: str, token: str = "") -> None:
                 # raises KeyError on a binary frame and kills the
                 # connection (PG-A2). Binary frames carry no action, so
                 # they are ignored and the connection survives.
-                message = await websocket.receive()
+                # The read races the forwarding task (K3): if forwarding
+                # has ended, the connection is dead even if the client
+                # keeps sending, so stop instead of applying its actions.
+                receive_task = asyncio.ensure_future(websocket.receive())
+                done, _pending = await asyncio.wait(
+                    {receive_task, forward_task}, return_when=asyncio.FIRST_COMPLETED
+                )
+                if forward_task in done and receive_task not in done:
+                    receive_task.cancel()
+                    if not forward_task.cancelled() and forward_task.exception() is not None:
+                        logger.error(
+                            "Websocket forwarding task failed",
+                            exc_info=forward_task.exception(),
+                        )
+                    logger.warning("Closing a websocket whose forwarding task ended")
+                    break
+                message = receive_task.result()
                 if message["type"] == "websocket.disconnect":
                     raise WebSocketDisconnect(message.get("code", 1000))
                 if message["type"] != "websocket.receive" or "text" not in message:

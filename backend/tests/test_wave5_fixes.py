@@ -212,3 +212,60 @@ def test_sec5_redis_drop_falls_back_to_memory_limiter(monkeypatch):
     with pytest.raises(AppError) as excinfo:
         limiter.check("auth:1.2.3.4", 3)
     assert excinfo.value.status_code == 429
+
+
+# ---- K3: forwarding task death closes the connection ----
+
+
+def test_k3_forward_send_failure_ends_the_connection(client, host_and_room):
+    import asyncio
+    import json as json_lib
+
+    from app import ws as ws_mod
+
+    host, room = host_and_room
+    code = room["room"]["code"]
+    headers = auth_headers(host["access_token"])
+    client.post(f"/api/rooms/{code}/stories", json={"title": "S1"}, headers=headers)
+    guest = client.post("/api/rooms/join", json={"code": code, "name": "Guest"}).json()
+
+    class StubWS:
+        def __init__(self):
+            self.inbox = asyncio.Queue()
+            self.closed = None
+            self.send_text_calls = 0
+
+        async def accept(self):
+            pass
+
+        async def close(self, code=1000):
+            self.closed = code
+
+        async def send_json(self, data):
+            pass
+
+        async def send_text(self, message):
+            self.send_text_calls += 1
+            raise RuntimeError("send on a broken transport")
+
+        async def receive(self):
+            return await self.inbox.get()
+
+    async def scenario():
+        stub = StubWS()
+        task = asyncio.create_task(ws_mod.room_socket(stub, code, guest["access_token"]))
+        # The join broadcast reaches forward_events and its send raises.
+        await asyncio.sleep(1.0)
+        # Asserted inside the loop, before asyncio.run tears it down, so a
+        # done task here means the handler ended on its own, not that the
+        # loop closure cancelled it.
+        assert task.done(), "handler stayed alive after the forwarding task died"
+        assert stub.closed is not None
+        assert stub.send_text_calls >= 1
+        return stub
+
+    asyncio.run(scenario())
+    # No vote from the dead connection was ever applied.
+    state = client.get(f"/api/rooms/{code}", headers=headers).json()
+    assert state["round"]["vote_count"] == 0
+    assert json_lib.dumps(state)  # state stayed readable throughout
