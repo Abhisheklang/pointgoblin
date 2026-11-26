@@ -22,6 +22,7 @@ export default function Room({ session, onLeave }: RoomProps) {
     "connecting" | "live" | "reconnecting" | "failed"
   >("connecting");
   const [notice, setNotice] = useState("");
+  const [confirmReset, setConfirmReset] = useState(false);
   const socketRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
@@ -94,16 +95,23 @@ export default function Room({ session, onLeave }: RoomProps) {
     };
   }, [session.code, session.token, session.name]);
 
-  function send(payload: Record<string, string>) {
+  function send(payload: Record<string, string>): boolean {
     const socket = socketRef.current;
     if (socket && socket.readyState === WebSocket.OPEN) {
       socket.send(JSON.stringify(payload));
+      return true;
     }
+    return false;
   }
 
   function handleVote(value: string) {
-    setMyVote(value);
-    send({ action: "vote", value });
+    // Only mark the card as cast when the vote actually left the browser:
+    // a click while disconnected must never look like a counted vote (U4).
+    if (send({ action: "vote", value })) {
+      setMyVote(value);
+    } else {
+      setNotice("You are not connected right now. That vote was not sent.");
+    }
   }
 
   function handleAddStory(event: React.FormEvent) {
@@ -112,8 +120,24 @@ export default function Room({ session, onLeave }: RoomProps) {
     if (!title) {
       return;
     }
-    send({ action: "add_story", title });
-    setStoryTitle("");
+    if (send({ action: "add_story", title })) {
+      setStoryTitle("");
+    } else {
+      setNotice("You are not connected right now. That story was not added.");
+    }
+  }
+
+  function handleReset() {
+    // Reset permanently deletes every vote in the round, so it takes two
+    // clicks: the first arms the button, the second confirms (SEC8).
+    if (!confirmReset) {
+      setConfirmReset(true);
+      setNotice("Reset deletes every vote cast in this round. Click Confirm reset to go ahead.");
+      return;
+    }
+    setConfirmReset(false);
+    setMyVote(null);
+    send({ action: "reset" });
   }
 
   async function copyCode() {
@@ -352,13 +376,10 @@ export default function Room({ session, onLeave }: RoomProps) {
                         </button>
                         <button
                           type="button"
-                          onClick={() => {
-                            setMyVote(null);
-                            send({ action: "reset" });
-                          }}
+                          onClick={handleReset}
                           className="pg-btn border-[1.5px] border-paper/60 px-4 py-2.5 font-semibold text-paper hover:bg-paper/10"
                         >
-                          Reset round
+                          {confirmReset ? "Confirm reset" : "Reset round"}
                         </button>
                       </div>
                     )}
