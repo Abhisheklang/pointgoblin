@@ -8,8 +8,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app import repositories
+from app.config import get_settings
 from app.errors import bad_request, forbidden, not_found
-from app.events import bus
+from app.events import bus, display_id
 from app.models import Room, Story, User
 
 DECK = ["0", "1", "2", "3", "5", "8", "13", "21", "?", "pass"]
@@ -61,7 +62,11 @@ def collect_room_data(db: Session, room: Room) -> dict[str, Any]:
     votes_data: list[dict[str, str]] = []
     if active is not None:
         votes_data = [
-            {"name": v.participant_name, "value": v.value}
+            {
+                "id": display_id(v.participant_key),
+                "name": v.participant_name,
+                "value": v.value,
+            }
             for v in repositories.list_votes(db, active.id)
         ]
     return {
@@ -89,7 +94,10 @@ def assemble_state(data: dict[str, Any], people: list[dict[str, Any]]) -> dict[s
         round_data = {
             "story_id": data["active_id"],
             "revealed": revealed,
-            "voted": [v["name"] for v in votes],
+            # Voted state is keyed by the stable per-participant id, never
+            # by display name: two same-name participants are separate
+            # identities and must not corrupt each other's UI (U2, U3).
+            "voted": [v["id"] for v in votes],
             "vote_count": len(votes),
             "results": None,
         }
@@ -180,6 +188,10 @@ def _activate_only(db: Session, room: Room, target: Story) -> Story:
 
 def add_story(db: Session, room: Room, actor: dict[str, Any], title: str) -> Story:
     require_host(room, actor)
+    # Cap the queue (K4): every state build embeds and broadcasts the full
+    # story list, so an unbounded queue makes every broadcast grow forever.
+    if repositories.count_stories(db, room.id) >= get_settings().max_stories_per_room:
+        raise bad_request("This room has reached its story limit")
     story = repositories.create_story(db, room.id, title)
     if repositories.get_active_story(db, room.id) is None:
         _activate_only(db, room, story)

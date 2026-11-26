@@ -52,6 +52,10 @@ def list_stories(db: Session, room_id: str) -> list[models.Story]:
     )
 
 
+def count_stories(db: Session, room_id: str) -> int:
+    return db.query(models.Story).filter(models.Story.room_id == room_id).count()
+
+
 def get_story(db: Session, story_id: str) -> models.Story | None:
     return db.query(models.Story).filter(models.Story.id == story_id).first()
 
