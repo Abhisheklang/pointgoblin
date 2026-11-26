@@ -3,12 +3,14 @@
 import asyncio
 import json
 import logging
+import time
 from typing import Any
 
 import jwt
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from app import services
+from app.config import get_settings
 from app.database import SessionLocal
 from app.errors import AppError
 from app.events import bus
@@ -20,6 +22,27 @@ router = APIRouter(tags=["websocket"])
 BROADCAST_COALESCE_SECONDS = 0.075
 _pending_broadcasts: dict[str, asyncio.Task[None]] = {}
 _dirty_broadcasts: set[str] = set()
+
+
+class MessageRateLimiter:
+    """Fixed window counter for one websocket connection.
+
+    Mirrors the window style of app.rate_limit.RateLimiter, but scoped to a
+    single connection so it needs no shared store.
+    """
+
+    def __init__(self, limit: int, window_seconds: int) -> None:
+        self._limit = limit
+        self._window = window_seconds
+        self._hits: list[float] = []
+
+    def allow(self) -> bool:
+        now = time.monotonic()
+        self._hits = [t for t in self._hits if now - t < self._window]
+        if len(self._hits) >= self._limit:
+            return False
+        self._hits.append(now)
+        return True
 
 
 def authenticate(token: str) -> dict[str, Any] | None:
@@ -64,9 +87,19 @@ async def room_socket(websocket: WebSocket, code: str, token: str = "") -> None:
             await websocket.send_text(message)
 
     forward_task = asyncio.create_task(forward_events())
+    ws_settings = get_settings()
+    message_limiter = MessageRateLimiter(
+        ws_settings.ws_message_rate_limit, ws_settings.rate_window_seconds
+    )
     try:
         while True:
             raw = await websocket.receive_text()
+            if len(raw.encode("utf-8")) > ws_settings.ws_max_message_bytes:
+                logger.warning("Dropped an oversized websocket message")
+                continue
+            if not message_limiter.allow():
+                logger.warning("Dropped a websocket message over the rate limit")
+                continue
             try:
                 await handle_message(room_code, actor, raw)
             except Exception:

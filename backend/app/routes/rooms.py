@@ -33,8 +33,12 @@ async def create_room(
 
 @router.post("/join")
 async def join_room(
-    payload: schemas.JoinRoomRequest, db: Session = Depends(get_db)
+    payload: schemas.JoinRoomRequest, request: Request, db: Session = Depends(get_db)
 ) -> dict[str, Any]:
+    limiter.check(
+        f"join:{request.client.host if request.client else 'unknown'}",
+        get_settings().auth_rate_limit,
+    )
     room = services.require_room(db, payload.code)
     token = create_guest_token(room.code, payload.name)
     state = await services.build_state(db, room)

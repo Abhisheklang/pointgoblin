@@ -102,6 +102,21 @@ def test_same_name_guests_are_separate_identities(client, host_and_room):
     assert state["round"]["vote_count"] == 2
 
 
+def test_join_endpoint_is_rate_limited(client, host_and_room, monkeypatch):
+    from app.config import get_settings
+
+    settings = get_settings()
+    monkeypatch.setattr(settings, "rate_limit_enabled", True)
+    monkeypatch.setattr(settings, "auth_rate_limit", 3)
+    _, room = host_and_room
+    code = room["room"]["code"]
+    for _ in range(3):
+        response = client.post("/api/rooms/join", json={"code": code, "name": "Pat"})
+        assert response.status_code == 200
+    response = client.post("/api/rooms/join", json={"code": code, "name": "Pat"})
+    assert response.status_code == 429
+
+
 def test_room_state_needs_a_token(client, host_and_room):
     _, room = host_and_room
     response = client.get(f"/api/rooms/{room['room']['code']}")
