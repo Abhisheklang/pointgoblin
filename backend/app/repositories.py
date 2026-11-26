@@ -3,7 +3,8 @@
 import secrets
 import string
 
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import Session
 
 from app import models
@@ -64,13 +65,47 @@ def get_active_story(db: Session, room_id: str) -> models.Story | None:
     )
 
 
+def lock_room(db: Session, room_id: str) -> models.Room | None:
+    """Lock the room row for the rest of the transaction.
+
+    Serializes guarded room writes (story activation) on databases with row
+    locks. On SQLite this is a plain read; the write lock still serializes
+    the transaction itself.
+    """
+    return db.query(models.Room).filter(models.Room.id == room_id).with_for_update().first()
+
+
 def create_story(db: Session, room_id: str, title: str) -> models.Story:
-    position = db.query(models.Story).filter(models.Story.room_id == room_id).count()
-    story = models.Story(room_id=room_id, title=title, position=position)
-    db.add(story)
-    db.commit()
-    db.refresh(story)
-    return story
+    # Position is max(position) + 1, retried against the unique constraint on
+    # (room_id, position): a concurrent creator that commits first makes our
+    # position stale, the constraint rejects the insert, and we recompute
+    # instead of landing a duplicate position.
+    last_error: Exception | None = None
+    for _ in range(20):
+        max_position = (
+            db.query(func.max(models.Story.position))
+            .filter(models.Story.room_id == room_id)
+            .scalar()
+        )
+        position = 0 if max_position is None else max_position + 1
+        story = models.Story(room_id=room_id, title=title, position=position)
+        db.add(story)
+        try:
+            db.commit()
+        except IntegrityError as exc:
+            db.rollback()
+            last_error = exc
+            continue
+        except OperationalError as exc:
+            db.rollback()
+            if "locked" not in str(exc).lower():
+                raise
+            last_error = exc
+            continue
+        db.refresh(story)
+        return story
+    assert last_error is not None
+    raise last_error
 
 
 def list_votes(db: Session, story_id: str) -> list[models.Vote]:

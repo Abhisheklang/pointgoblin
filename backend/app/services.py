@@ -53,7 +53,10 @@ def collect_room_data(db: Session, room: Room) -> dict[str, Any]:
     thread so the event loop stays free for socket traffic.
     """
     stories = repositories.list_stories(db, room.id)
-    active = next((s for s in stories if s.status in ("active", "revealed")), None)
+    # One active-story selector for the whole app: repositories.get_active_story.
+    # The state clients see and the story cast_vote lands votes on both come
+    # from this function, so they can never diverge.
+    active = repositories.get_active_story(db, room.id)
     votes_data: list[dict[str, str]] = []
     if active is not None:
         votes_data = [
@@ -150,12 +153,31 @@ def reset_round(db: Session, room: Room, actor: dict[str, Any]) -> Story:
     return story
 
 
+def _activate_only(db: Session, room: Room, target: Story) -> Story:
+    """Make target the room's only active story, atomically.
+
+    The room row lock serializes concurrent activations, and deactivating
+    every other active or revealed story is a single bulk update inside the
+    same transaction as the activation, so a two-active state cannot be
+    committed: a racing activation either runs entirely before or entirely
+    after this one, and the later one deactivates the earlier one's story.
+    """
+    repositories.lock_room(db, room.id)
+    db.query(Story).filter(
+        Story.room_id == room.id,
+        Story.id != target.id,
+        Story.status.in_(["active", "revealed"]),
+    ).update({"status": "done"}, synchronize_session="fetch")
+    target.status = "active"
+    db.commit()
+    return target
+
+
 def add_story(db: Session, room: Room, actor: dict[str, Any], title: str) -> Story:
     require_host(room, actor)
     story = repositories.create_story(db, room.id, title)
     if repositories.get_active_story(db, room.id) is None:
-        story.status = "active"
-        db.commit()
+        _activate_only(db, room, story)
     return story
 
 
@@ -164,12 +186,7 @@ def activate_story(db: Session, room: Room, actor: dict[str, Any], story_id: str
     target = repositories.get_story(db, story_id)
     if target is None or target.room_id != room.id:
         raise not_found("That story does not exist in this room")
-    for story in repositories.list_stories(db, room.id):
-        if story.status in ("active", "revealed") and story.id != target.id:
-            story.status = "done"
-    target.status = "active"
-    db.commit()
-    return target
+    return _activate_only(db, room, target)
 
 
 def register_user(db: Session, email: str, name: str, password_hash: str) -> User:

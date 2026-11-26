@@ -48,6 +48,7 @@ class Room(Base):
 
 class Story(Base):
     __tablename__ = "stories"
+    __table_args__ = (UniqueConstraint("room_id", "position", name="uq_story_position_per_room"),)
 
     id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
     room_id: Mapped[str] = mapped_column(ForeignKey("rooms.id"), index=True)

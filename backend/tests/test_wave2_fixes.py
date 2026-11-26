@@ -110,3 +110,89 @@ def test_s2_duplicate_email_registration_race_loser_gets_400():
         count = db.query(models.User).filter_by(email=email).count()
         db.close()
         assert count == 1
+
+
+# ---------------------------------------------------------------- S3
+
+
+def test_s3_concurrent_create_story_positions_stay_unique():
+    for _ in range(50):
+        db = SessionLocal()
+        room = repositories.create_room(db, "Pos room", None)
+        room_id = room.id
+        db.close()
+
+        def make_worker(room_id, title):
+            def work(db):
+                repositories.create_story(db, room_id, title)  # noqa: B023
+
+            return work
+
+        errors = _run_threads([make_worker(room_id, f"t{n}") for n in range(4)])
+        assert errors == []
+        db = SessionLocal()
+        positions = sorted(s.position for s in repositories.list_stories(db, room_id))
+        db.close()
+        assert positions == [0, 1, 2, 3]
+
+
+def test_s3_concurrent_add_story_never_two_active():
+    for i in range(100):
+        db = SessionLocal()
+        user = repositories.create_user(db, f"hostrace{i}@example.com", "Host", "hash")
+        room = repositories.create_room(db, "Add race", user.id)
+        code, host_id = room.code, user.id
+        db.close()
+        actor = {"sub": host_id, "scope": "user", "name": "Host"}
+
+        def make_worker(code, actor, title):
+            def work(db):
+                rm = repositories.get_room_by_code(db, code)  # noqa: B023
+                services.add_story(db, rm, actor, title)  # noqa: B023
+
+            return work
+
+        errors = _run_threads([make_worker(code, actor, "Alpha"), make_worker(code, actor, "Beta")])
+        assert errors == []
+        db = SessionLocal()
+        rm = repositories.get_room_by_code(db, code)
+        actives = [
+            s for s in repositories.list_stories(db, rm.id) if s.status in ("active", "revealed")
+        ]
+        db.close()
+        assert len(actives) <= 1
+
+
+def test_s3_selectors_agree_on_constructed_two_active_state():
+    """Legacy two-active state built directly: both selectors must agree."""
+    db = SessionLocal()
+    room = repositories.create_room(db, "Mismatch room", None)
+    first = repositories.create_story(db, room.id, "First story")
+    second = repositories.create_story(db, room.id, "Second story")
+    first.status = "active"
+    second.status = "active"
+    db.commit()
+    data = services.collect_room_data(db, room)
+    active = repositories.get_active_story(db, room.id)
+    db.close()
+    assert active is not None
+    assert data["active_id"] == active.id
+
+
+def test_s3_activate_story_still_deactivates_others_sequentially():
+    db = SessionLocal()
+    user = repositories.create_user(db, "host3@example.com", "Host", "hash")
+    room = repositories.create_room(db, "Activate room", user.id)
+    actor = {"sub": user.id, "scope": "user", "name": "Host"}
+    s1 = services.add_story(db, room, actor, "One")
+    s2 = services.add_story(db, room, actor, "Two")
+    services.activate_story(db, room, actor, s2.id)
+    db.expire_all()
+    statuses = {s.title: s.status for s in repositories.list_stories(db, room.id)}
+    assert statuses == {"One": "done", "Two": "active"}
+    services.reveal_votes(db, room, actor)
+    services.activate_story(db, room, actor, s1.id)
+    db.expire_all()
+    statuses_after = {s.title: s.status for s in repositories.list_stories(db, room.id)}
+    db.close()
+    assert statuses_after == {"One": "active", "Two": "done"}
