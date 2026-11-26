@@ -2,6 +2,7 @@
 
 from datetime import UTC, datetime, timedelta
 from typing import Any
+from uuid import uuid4
 
 import bcrypt
 import jwt
@@ -48,5 +49,7 @@ def create_user_token(user_id: str, name: str) -> str:
 
 
 def create_guest_token(room_code: str, name: str) -> str:
-    subject = f"guest:{room_code}:{name}"
+    # The random component keeps two guests who typed the same display name
+    # as separate identities; the name lives only in the name claim.
+    subject = f"guest:{room_code}:{uuid4().hex}"
     return create_token(subject, name, "guest", settings.guest_token_minutes, room_code)

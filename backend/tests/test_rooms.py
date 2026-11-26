@@ -79,6 +79,29 @@ def test_guest_token_from_another_room_is_rejected(client, host_and_room):
     assert own.status_code == 200
 
 
+def test_same_name_guests_are_separate_identities(client, host_and_room):
+    host, room = host_and_room
+    code = room["room"]["code"]
+    headers = auth_headers(host["access_token"])
+    client.post(f"/api/rooms/{code}/stories", json={"title": "Story"}, headers=headers)
+
+    first = join_guest(client, code, name="Sam")
+    second = join_guest(client, code, name="Sam")
+    assert first["access_token"] != second["access_token"]
+
+    client.post(
+        f"/api/rooms/{code}/vote",
+        json={"value": "3"},
+        headers=auth_headers(first["access_token"]),
+    )
+    state = client.post(
+        f"/api/rooms/{code}/vote",
+        json={"value": "8"},
+        headers=auth_headers(second["access_token"]),
+    ).json()
+    assert state["round"]["vote_count"] == 2
+
+
 def test_room_state_needs_a_token(client, host_and_room):
     _, room = host_and_room
     response = client.get(f"/api/rooms/{room['room']['code']}")
