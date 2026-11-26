@@ -33,6 +33,13 @@ class RateLimiter:
                 )
                 self._redis = None
 
+    def _check_memory(self, key: str, limit: int, now: float, window: int) -> None:
+        hits = [t for t in self._memory.get(key, []) if now - t < window]
+        if len(hits) >= limit:
+            raise AppError(429, "rate_limited", "Too many requests. Please wait a moment.")
+        hits.append(now)
+        self._memory[key] = hits
+
     def check(self, key: str, limit: int) -> None:
         """Raise a 429 AppError when the key has used up its allowance."""
         if not settings.rate_limit_enabled:
@@ -41,17 +48,35 @@ class RateLimiter:
         window = settings.rate_window_seconds
         if self._redis is not None:
             redis_key = f"ratelimit:{key}"
-            count = int(self._redis.incr(redis_key))
-            if count == 1:
-                self._redis.expire(redis_key, window)
+            try:
+                # Create the counter with its expiry already attached, in
+                # one command, then increment (SEC5). The old code issued
+                # INCR and EXPIRE as two calls and only expired when the
+                # count was exactly 1, so a single lost EXPIRE left the
+                # key with no TTL and the client was rate limited forever.
+                # Here the key can never exist without a TTL: the SET NX
+                # creates it with the window expiry, and INCR preserves
+                # the TTL of an existing key.
+                self._redis.set(redis_key, 0, ex=window, nx=True)
+                count = int(self._redis.incr(redis_key))
+            except Exception:
+                # Redis dropped after the import time probe (SEC5): fail
+                # degraded into the local memory limiter instead of
+                # raising, which turned register, login, join and room
+                # creation into unhandled 500s. The fallback still limits,
+                # just per process, so the failure is neither a 500 nor a
+                # wide open limiter.
+                logger.warning(
+                    "Redis rate limiter failed. Falling back to the in memory "
+                    "rate limiter for this check.",
+                    exc_info=True,
+                )
+                self._check_memory(key, limit, now, window)
+                return
             if count > limit:
                 raise AppError(429, "rate_limited", "Too many requests. Please wait a moment.")
             return
-        hits = [t for t in self._memory.get(key, []) if now - t < window]
-        if len(hits) >= limit:
-            raise AppError(429, "rate_limited", "Too many requests. Please wait a moment.")
-        hits.append(now)
-        self._memory[key] = hits
+        self._check_memory(key, limit, now, window)
 
 
 limiter = RateLimiter()

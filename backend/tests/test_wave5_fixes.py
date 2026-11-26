@@ -136,3 +136,79 @@ def test_pg_s2_normal_bodies_still_work(client, host_and_room):
         headers=auth_headers(host["access_token"]),
     )
     assert story.status_code == 201
+
+
+# ---- SEC5: rate limiter fails degraded, expiry attached at creation ----
+# These use hand rolled Redis stand-ins, the same pattern as the wave 2
+# S5 tests; the fakeredis runs are the verdict pass reproducers, labelled
+# as fakeredis in the wave 5 report (no redis-server exists in this VM).
+
+
+class _SyncFakeRedis:
+    """Sync Redis stand-in tracking values and TTLs like real Redis."""
+
+    def __init__(self):
+        self.store = {}
+        self.ttls = {}
+
+    def set(self, key, value, ex=None, nx=False):
+        if nx and key in self.store:
+            return None
+        self.store[key] = int(value)
+        self.ttls[key] = ex
+        return True
+
+    def incr(self, key):
+        self.store[key] = self.store.get(key, 0) + 1
+        return self.store[key]
+
+    def ttl(self, key):
+        if key not in self.store:
+            return -2
+        return -1 if self.ttls.get(key) is None else self.ttls[key]
+
+
+def _limiter_with(redis_client):
+    from app.rate_limit import RateLimiter
+
+    limiter = RateLimiter.__new__(RateLimiter)
+    limiter._memory = {}
+    limiter._redis = redis_client
+    return limiter
+
+
+def test_sec5_counter_key_always_has_a_ttl(monkeypatch):
+    from app.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "rate_limit_enabled", True)
+    fake = _SyncFakeRedis()
+    limiter = _limiter_with(fake)
+    for _ in range(3):
+        limiter.check("auth:9.9.9.9", 100)
+    assert fake.store["ratelimit:auth:9.9.9.9"] == 3
+    # Never -1: the key was created with its expiry already attached.
+    assert fake.ttl("ratelimit:auth:9.9.9.9") > 0
+
+
+def test_sec5_redis_drop_falls_back_to_memory_limiter(monkeypatch):
+    import redis as redis_lib
+
+    from app.config import get_settings
+    from app.errors import AppError
+
+    monkeypatch.setattr(get_settings(), "rate_limit_enabled", True)
+
+    class DeadRedis:
+        def set(self, *args, **kwargs):
+            raise redis_lib.exceptions.ConnectionError("redis went away")
+
+        def incr(self, *args, **kwargs):
+            raise redis_lib.exceptions.ConnectionError("redis went away")
+
+    limiter = _limiter_with(DeadRedis())
+    # No exception escapes check(): the fallback memory limiter answers.
+    for _ in range(3):
+        limiter.check("auth:1.2.3.4", 3)
+    with pytest.raises(AppError) as excinfo:
+        limiter.check("auth:1.2.3.4", 3)
+    assert excinfo.value.status_code == 429
