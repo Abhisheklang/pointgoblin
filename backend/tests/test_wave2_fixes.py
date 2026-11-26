@@ -225,3 +225,93 @@ def test_s4_subscription_queue_is_bounded_and_drops_oldest():
         assert last == {"type": "state", "n": 999}
 
     asyncio.run(run())
+
+
+# ---------------------------------------------------------------- S5
+
+
+class _FakeRedis:
+    """Minimal async Redis stand-in honoring per-key expiry deadlines."""
+
+    def __init__(self):
+        self.store = {}
+        self.deadlines = {}
+
+    async def set(self, key, value, ex=None):
+        import time as _time
+
+        self.store[key] = value
+        self.deadlines[key] = None if ex is None else _time.monotonic() + ex
+
+    async def get(self, key):
+        import time as _time
+
+        deadline = self.deadlines.get(key)
+        if deadline is not None and deadline <= _time.monotonic():
+            return None
+        return self.store.get(key)
+
+    async def delete(self, key):
+        self.store.pop(key, None)
+        self.deadlines.pop(key, None)
+
+    async def scan_iter(self, match=None):
+        import fnmatch
+
+        for key in list(self.store):
+            if match is None or fnmatch.fnmatch(key, match):
+                yield key
+
+
+def test_s5_redis_presence_is_per_participant_with_own_ttl():
+    import asyncio
+
+    from app.config import get_settings
+    from app.events import RedisBus
+
+    async def run():
+        bus = RedisBus("redis://localhost:6399/0")
+        fake = _FakeRedis()
+        bus._redis = fake
+        ttl = get_settings().presence_ttl_seconds
+        assert ttl <= 600  # minutes, not the old 12 hours
+
+        await bus.set_presence("GHOST1", "user-123", "Ghost User", False)
+        ghost_key = "presence:GHOST1:user-123"
+        assert ghost_key in fake.store
+        ghost_deadline = fake.deadlines[ghost_key]
+        assert ghost_deadline is not None
+
+        # A second participant joining must not touch the ghost's deadline.
+        await bus.set_presence("GHOST1", "user-999", "Second Joiner", True)
+        assert fake.deadlines[ghost_key] == ghost_deadline
+
+        people = await bus.get_presence("GHOST1")
+        assert {p["name"] for p in people} == {"Ghost User", "Second Joiner"}
+
+        # Simulate the crash plus TTL passing for the ghost only.
+        fake.deadlines[ghost_key] = 0
+        people = await bus.get_presence("GHOST1")
+        assert [p["name"] for p in people] == ["Second Joiner"]
+
+        await bus.remove_presence("GHOST1", "user-999")
+        assert await bus.get_presence("GHOST1") == []
+
+    asyncio.run(run())
+
+
+def test_s5_memory_bus_presence_expires_per_participant(monkeypatch):
+    import asyncio
+
+    from app.config import get_settings
+    from app.events import MemoryBus
+
+    monkeypatch.setattr(get_settings(), "presence_ttl_seconds", 0)
+
+    async def run():
+        bus = MemoryBus()
+        await bus.set_presence("ROOM1", "user-1", "Ghost", False)
+        # TTL of 0 means the entry is already expired on the next read.
+        assert await bus.get_presence("ROOM1") == []
+
+    asyncio.run(run())

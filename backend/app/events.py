@@ -10,6 +10,7 @@ import asyncio
 import hashlib
 import json
 import logging
+import time
 from typing import Any
 
 from app.config import get_settings
@@ -117,15 +118,25 @@ class MemoryBus(EventBus):
         self._subs.get(subscription.channel, set()).discard(subscription)
 
     async def set_presence(self, room_code: str, key: str, name: str, is_host: bool) -> None:
-        self._presence.setdefault(room_code, {})[key] = {"name": name, "is_host": is_host}
+        # Same expiry semantics as the Redis bus: each participant's entry
+        # carries its own deadline, refreshed only by that participant.
+        self._presence.setdefault(room_code, {})[key] = {
+            "name": name,
+            "is_host": is_host,
+            "expires_at": time.monotonic() + get_settings().presence_ttl_seconds,
+        }
 
     async def remove_presence(self, room_code: str, key: str) -> None:
         self._presence.get(room_code, {}).pop(key, None)
 
     async def get_presence(self, room_code: str) -> list[dict[str, Any]]:
+        now = time.monotonic()
+        room = self._presence.get(room_code, {})
+        for key in [k for k, item in room.items() if item["expires_at"] <= now]:
+            room.pop(key, None)
         return [
             {"id": display_id(key), "name": item["name"], "is_host": item["is_host"]}
-            for key, item in self._presence.get(room_code, {}).items()
+            for key, item in room.items()
         ]
 
 
@@ -195,19 +206,35 @@ class RedisBus(EventBus):
                 except Exception:
                     logger.warning("Pubsub unsubscribe failed", exc_info=True)
 
+    @staticmethod
+    def _presence_key(room_code: str, key: str) -> str:
+        return f"presence:{room_code}:{key}"
+
     async def set_presence(self, room_code: str, key: str, name: str, is_host: bool) -> None:
+        # One Redis key per participant, each with its own short TTL
+        # (presence_ttl_seconds, default 300 seconds). Only this
+        # participant's own join or activity refreshes this key, so a
+        # crashed session's ghost expires within the TTL and a new join in
+        # the room can never resurrect or extend a stale participant.
         value = json.dumps({"name": name, "is_host": is_host})
-        await self._redis.hset(f"presence:{room_code}", key, value)
-        await self._redis.expire(f"presence:{room_code}", 60 * 60 * 12)
+        await self._redis.set(
+            self._presence_key(room_code, key),
+            value,
+            ex=get_settings().presence_ttl_seconds,
+        )
 
     async def remove_presence(self, room_code: str, key: str) -> None:
-        await self._redis.hdel(f"presence:{room_code}", key)
+        await self._redis.delete(self._presence_key(room_code, key))
 
     async def get_presence(self, room_code: str) -> list[dict[str, Any]]:
-        raw = await self._redis.hgetall(f"presence:{room_code}")
+        prefix = f"presence:{room_code}:"
         people = []
-        for key, value in raw.items():
+        async for redis_key in self._redis.scan_iter(match=f"{prefix}*"):
+            value = await self._redis.get(redis_key)
+            if value is None:
+                continue
             item = json.loads(value)
+            key = redis_key[len(prefix) :]
             people.append({"id": display_id(key), "name": item["name"], "is_host": item["is_host"]})
         return people
 
