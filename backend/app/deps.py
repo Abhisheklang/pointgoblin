@@ -16,8 +16,12 @@ def get_actor(
     request: Request,
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer),
 ) -> dict[str, Any]:
-    """Resolve the caller from a bearer token, or raise 401."""
-    token = credentials.credentials if credentials else request.query_params.get("token", "")
+    """Resolve the caller from a bearer token, or raise 401.
+
+    Header only: tokens in URL query strings leak into access logs, proxy
+    logs and browser history, and no shipped client uses them.
+    """
+    token = credentials.credentials if credentials else ""
     if not token:
         raise unauthorized()
     try:
