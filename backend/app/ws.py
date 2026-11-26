@@ -67,7 +67,10 @@ async def room_socket(websocket: WebSocket, code: str, token: str = "") -> None:
     try:
         while True:
             raw = await websocket.receive_text()
-            await handle_message(room_code, actor, raw)
+            try:
+                await handle_message(room_code, actor, raw)
+            except Exception:
+                logger.exception("Failed to handle a websocket message")
     except WebSocketDisconnect:
         pass
     finally:
@@ -147,6 +150,8 @@ async def handle_message(room_code: str, actor: dict[str, Any], raw: str) -> Non
     try:
         data = json.loads(raw)
     except json.JSONDecodeError:
+        return
+    if not isinstance(data, dict):
         return
     applied = await asyncio.to_thread(apply_action, room_code, actor, data)
     if applied:

@@ -38,6 +38,27 @@ def test_two_clients_see_each_other_vote_and_reveal(client, host_and_room):
         assert revealed["round"]["results"]["average"] == 5.0
 
 
+def test_non_object_message_does_not_kill_the_socket(client, host_and_room):
+    host, room = host_and_room
+    code = room["room"]["code"]
+    headers = auth_headers(host["access_token"])
+    client.post(f"/api/rooms/{code}/stories", json={"title": "Sturdy"}, headers=headers)
+    guest = client.post("/api/rooms/join", json={"code": code, "name": "Ned Robust"}).json()
+    with client.websocket_connect(
+        f"/ws/rooms/{code}?token={guest['access_token']}"
+    ) as guest_socket:
+        guest_socket.receive_text()
+        for junk in ("123", "[]", '"x"', "not json"):
+            guest_socket.send_text(junk)
+        guest_socket.send_text(json.dumps({"action": "vote", "value": "5"}))
+        state = {}
+        while True:
+            state = json.loads(guest_socket.receive_text())
+            if state.get("round") and state["round"]["vote_count"] == 1:
+                break
+        assert state["round"]["vote_count"] == 1
+
+
 def test_websocket_rejects_a_bad_token(client, host_and_room):
     _, room = host_and_room
     code = room["room"]["code"]
