@@ -250,7 +250,10 @@ def create_bus() -> EventBus:
             logger.info("Event bus: Redis at %s", settings.redis_url)
             return RedisBus(settings.redis_url)
         except Exception:
-            logger.warning("Redis is not reachable. Falling back to the in memory event bus.")
+            logger.warning(
+                "Redis is not reachable. Falling back to the in memory event bus.",
+                exc_info=True,
+            )
     logger.info("Event bus: in memory")
     return MemoryBus()
 

@@ -1,10 +1,12 @@
 """Small fixed window rate limiter backed by Redis or process memory."""
 
+import logging
 import time
 
 from app.config import get_settings
 from app.errors import AppError
 
+logger = logging.getLogger(__name__)
 settings = get_settings()
 
 
@@ -21,6 +23,14 @@ class RateLimiter:
                 self._redis = redis_lib.Redis.from_url(settings.redis_url, socket_timeout=1)
                 self._redis.ping()
             except Exception:
+                # Log the cause: silently degrading to the per-process
+                # memory limiter leaves operators no trace of a broken
+                # REDIS_URL or an unreachable Redis (V7).
+                logger.warning(
+                    "Redis rate limiter is not reachable. "
+                    "Falling back to the in memory rate limiter.",
+                    exc_info=True,
+                )
                 self._redis = None
 
     def check(self, key: str, limit: int) -> None:
