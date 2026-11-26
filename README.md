@@ -79,6 +79,8 @@ cp .env.example .env
 docker compose up --build
 ```
 
+The example file is a local trial setup: it sets ENVIRONMENT=dev and carries placeholder values that the app refuses to run with in production mode. Before deploying anywhere real, set JWT_SECRET and POSTGRES_PASSWORD in .env to strong random values of your own and set ENVIRONMENT=production.
+
 Open http://localhost:8080 in a browser. The landing page loads first, and the app opens from there.
 
 ### Without Docker

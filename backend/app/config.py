@@ -8,6 +8,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 KNOWN_DEFAULT_JWT_SECRETS = {
     "change-me-in-production",
     "local-development-secret-change-me",
+    # The placeholder that shipped in .env.example before the SEC1 fix, and
+    # its replacement. Both are printed in the public repository, so neither
+    # may ever sign tokens outside explicit dev mode.
+    "replace-with-a-long-random-value",
+    "REPLACE_ME_generate_a_random_secret_locally_do_not_commit",
 }
 
 
