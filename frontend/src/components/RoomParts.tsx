@@ -94,13 +94,13 @@ export function StoryQueue({
               </span>
             </span>
           </span>
-          {isHost && story.status === "pending" && (
+          {isHost && (story.status === "pending" || story.status === "done") && (
             <button
               type="button"
               onClick={() => onActivate(story.id)}
               className="pg-btn pg-print-sm shrink-0 bg-paper px-2.5 py-1.5 text-small font-semibold text-ink hover:bg-parchment"
             >
-              Start
+              {story.status === "done" ? "Run again" : "Start"}
             </button>
           )}
         </li>

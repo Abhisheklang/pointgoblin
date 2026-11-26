@@ -143,11 +143,10 @@ export default function Home({ onSession }: HomeProps) {
         </section>
 
         <section className="pg-enter pg-print bg-card p-5 sm:p-7" aria-label="Start">
-          <div className="grid grid-cols-2 gap-2.5" role="tablist" aria-label="Choose how to start">
+          <div className="grid grid-cols-2 gap-2.5" role="group" aria-label="Choose how to start">
             <button
               type="button"
-              role="tab"
-              aria-selected={mode === "create"}
+              aria-pressed={mode === "create"}
               onClick={() => {
                 setMode("create");
                 setError("");
@@ -160,8 +159,7 @@ export default function Home({ onSession }: HomeProps) {
             </button>
             <button
               type="button"
-              role="tab"
-              aria-selected={mode === "join"}
+              aria-pressed={mode === "join"}
               onClick={() => {
                 setMode("join");
                 setError("");

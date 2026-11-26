@@ -227,6 +227,13 @@ body {
   outline-offset: 1px;
 }
 
+/* Every button and link gets a visible keyboard focus indicator (U8). */
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--color-brass);
+  outline-offset: 2px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .pg-enter,
   .pg-enter-slow,
