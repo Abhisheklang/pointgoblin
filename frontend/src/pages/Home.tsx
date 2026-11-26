@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { ApiProblem, createRoom, joinRoom, login, register } from "../api";
 import Logo from "../components/Logo";
+import { DECK, cardLabel } from "../deck";
 import type { Session } from "../types";
 
 interface HomeProps {
@@ -10,14 +11,14 @@ interface HomeProps {
 
 type Mode = "create" | "join";
 
-const DECK_STRIP = ["0", "1", "2", "3", "5", "8", "13", "21", "?", "Pass"];
-
 function DeckStrip() {
   const row = (hidden: boolean) => (
     <span aria-hidden={hidden} className="flex shrink-0 items-center">
-      {DECK_STRIP.concat(DECK_STRIP).map((value, index) => (
+      {DECK.concat(DECK).map((value, index) => (
         <span key={index} className="flex items-center">
-          <span className="px-4 font-display text-heading font-black text-ink">{value}</span>
+          <span className="px-4 font-display text-heading font-black text-ink">
+            {cardLabel(value)}
+          </span>
           <span className="text-brassdeep" aria-hidden="true">
             ◆
           </span>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { socketUrl } from "../api";
+import { cardLabel } from "../deck";
 import GithubIcon from "../components/GithubIcon";
 import Logo from "../components/Logo";
 import { PresenceList, ResultsPanel, RoomSkeleton, StoryQueue } from "../components/RoomParts";
@@ -367,7 +368,7 @@ export default function Room({ session, onLeave }: RoomProps) {
                                 : "border-ink bg-card text-ink hover:bg-parchment"
                             } ${faceUp ? "opacity-60" : ""}`}
                           >
-                            {value === "pass" ? "Pass" : value}
+                            {cardLabel(value)}
                           </button>
                         );
                       })}

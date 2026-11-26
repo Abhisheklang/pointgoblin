@@ -146,10 +146,6 @@ body {
   animation: pg-fade-up var(--duration-base) var(--ease-out) both;
 }
 
-.pg-enter-slow {
-  animation: pg-fade-up var(--duration-reveal) var(--ease-out) both;
-}
-
 .pg-pop {
   animation: pg-pop-in var(--duration-base) var(--ease-out) both;
 }
@@ -236,7 +232,6 @@ a:focus-visible {
 
 @media (prefers-reduced-motion: reduce) {
   .pg-enter,
-  .pg-enter-slow,
   .pg-pop,
   .pg-flip,
   .pg-skeleton,
