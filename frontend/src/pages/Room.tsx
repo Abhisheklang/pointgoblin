@@ -18,33 +18,78 @@ export default function Room({ session, onLeave }: RoomProps) {
   const [myVote, setMyVote] = useState<string | null>(null);
   const [storyTitle, setStoryTitle] = useState("");
   const [connected, setConnected] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<
+    "connecting" | "live" | "reconnecting" | "failed"
+  >("connecting");
   const [notice, setNotice] = useState("");
   const socketRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    const socket = new WebSocket(socketUrl(session.code, session.token));
-    socketRef.current = socket;
-    socket.onopen = () => setConnected(true);
-    socket.onclose = () => setConnected(false);
-    socket.onmessage = (event: MessageEvent<string>) => {
-      const message = JSON.parse(event.data) as SocketMessage;
-      if (message.type === "you") {
-        setIsHost(message.is_host);
-        myIdRef.current = message.id;
-      } else if (message.type === "error") {
-        setNotice(message.message);
-      } else {
-        setState(message);
-        if (
-          message.round === null ||
-          (myIdRef.current !== null && !message.round.voted.includes(myIdRef.current))
-        ) {
-          setMyVote(null);
-        }
-      }
+    let cancelled = false;
+    let attempts = 0;
+    let timer: number | undefined;
+    const fatalCodes: Record<number, string> = {
+      4401: "Your session token has expired. Leave the room and join again.",
+      4403: "That token belongs to a different room. Leave the room and join again.",
+      4404: "That room no longer exists. Leave the room and check the code.",
     };
+
+    function connect() {
+      if (cancelled) {
+        return;
+      }
+      const socket = new WebSocket(socketUrl(session.code, session.token));
+      socketRef.current = socket;
+      socket.onopen = () => {
+        attempts = 0;
+        setConnected(true);
+        setConnectionStatus("live");
+      };
+      socket.onclose = (event: CloseEvent) => {
+        setConnected(false);
+        if (cancelled) {
+          return;
+        }
+        if (event.code in fatalCodes) {
+          setConnectionStatus("failed");
+          setNotice(fatalCodes[event.code]);
+          return;
+        }
+        attempts += 1;
+        if (attempts > 6) {
+          setConnectionStatus("failed");
+          setNotice("The connection was lost and could not be restored. Leave and rejoin.");
+          return;
+        }
+        setConnectionStatus("reconnecting");
+        timer = window.setTimeout(connect, Math.min(1000 * 2 ** (attempts - 1), 10000));
+      };
+      socket.onmessage = (event: MessageEvent<string>) => {
+        const message = JSON.parse(event.data) as SocketMessage;
+        if (message.type === "you") {
+          setIsHost(message.is_host);
+          myIdRef.current = message.id;
+        } else if (message.type === "error") {
+          setNotice(message.message);
+        } else {
+          setState(message);
+          if (
+            message.round === null ||
+            (myIdRef.current !== null && !message.round.voted.includes(myIdRef.current))
+          ) {
+            setMyVote(null);
+          }
+        }
+      };
+    }
+
+    connect();
     return () => {
-      socket.close();
+      cancelled = true;
+      if (timer !== undefined) {
+        window.clearTimeout(timer);
+      }
+      socketRef.current?.close();
       socketRef.current = null;
     };
   }, [session.code, session.token, session.name]);
@@ -97,7 +142,12 @@ export default function Room({ session, onLeave }: RoomProps) {
               className={`h-2 w-2 rounded-full ${connected ? "bg-evergreen" : "bg-clay"}`}
               aria-hidden="true"
             />
-            <span className="pg-kicker text-[0.62rem]">{connected ? "Live" : "Connecting"}</span>
+            <span className="pg-kicker text-[0.62rem]">
+              {connectionStatus === "live" && "Live"}
+              {connectionStatus === "connecting" && "Connecting"}
+              {connectionStatus === "reconnecting" && "Reconnecting"}
+              {connectionStatus === "failed" && "Connection failed"}
+            </span>
           </span>
           <button
             type="button"
@@ -109,7 +159,21 @@ export default function Room({ session, onLeave }: RoomProps) {
         </div>
       </header>
 
-      {state === null ? (
+      {state === null && connectionStatus === "failed" ? (
+        <main className="flex flex-1 flex-col items-start gap-3 py-10">
+          <h1 className="font-display text-title font-bold">The connection failed</h1>
+          <p className="max-w-md text-body text-inksoft">
+            {notice || "The room could not be reached."}
+          </p>
+          <button
+            type="button"
+            onClick={onLeave}
+            className="pg-btn pg-print-sm bg-ink px-4 py-2.5 font-semibold text-paper"
+          >
+            Leave room
+          </button>
+        </main>
+      ) : state === null ? (
         <div className="pt-6">
           <RoomSkeleton />
         </div>
