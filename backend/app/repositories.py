@@ -38,9 +38,34 @@ def generate_room_code(db: Session) -> str:
 def create_room(db: Session, name: str, host_id: str | None) -> models.Room:
     room = models.Room(code=generate_room_code(db), name=name, host_id=host_id)
     db.add(room)
+    db.flush()
+    if host_id is not None:
+        # The host is the room's first member (SEC6).
+        db.add(models.RoomMember(room_id=room.id, user_id=host_id))
     db.commit()
     db.refresh(room)
     return room
+
+
+def is_room_member(db: Session, room_id: str, user_id: str) -> bool:
+    return (
+        db.query(models.RoomMember)
+        .filter(models.RoomMember.room_id == room_id, models.RoomMember.user_id == user_id)
+        .first()
+        is not None
+    )
+
+
+def add_room_member(db: Session, room_id: str, user_id: str) -> None:
+    """Record a registered account's membership of a room, once (SEC6)."""
+    if is_room_member(db, room_id, user_id):
+        return
+    db.add(models.RoomMember(room_id=room_id, user_id=user_id))
+    try:
+        db.commit()
+    except IntegrityError:
+        # A concurrent join recorded the same membership first.
+        db.rollback()
 
 
 def list_stories(db: Session, room_id: str) -> list[models.Story]:

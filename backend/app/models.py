@@ -46,6 +46,25 @@ class Room(Base):
     )
 
 
+class RoomMember(Base):
+    """A registered account's membership of one room (SEC6).
+
+    Guest participants are bound to a room by their token's room claim and
+    need no record here. Registered (user-scope) tokens are not room bound,
+    so a user token may only read or act in a room the account is a member
+    of: the host (recorded at creation) or an account that joined the room
+    while signed in.
+    """
+
+    __tablename__ = "room_members"
+    __table_args__ = (UniqueConstraint("room_id", "user_id", name="uq_member_per_room"),)
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    room_id: Mapped[str] = mapped_column(ForeignKey("rooms.id"), index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 class Story(Base):
     __tablename__ = "stories"
     __table_args__ = (UniqueConstraint("room_id", "position", name="uq_story_position_per_room"),)

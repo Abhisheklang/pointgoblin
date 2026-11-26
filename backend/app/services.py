@@ -48,6 +48,25 @@ def participant_key(actor: dict[str, Any]) -> str:
     return str(actor.get("sub", "unknown"))
 
 
+def is_room_member(db: Session, room: Room, actor: dict[str, Any]) -> bool:
+    """Whether a user-scope actor belongs to the room (SEC6).
+
+    The host is always a member. Any other registered account needs a
+    membership record, created when it joins the room while signed in.
+    Guest actors are bound to their room by their token and never reach
+    this check.
+    """
+    if room.host_id is not None and room.host_id == actor.get("sub"):
+        return True
+    return repositories.is_room_member(db, room.id, str(actor.get("sub", "")))
+
+
+def require_room_membership(db: Session, room: Room, actor: dict[str, Any]) -> None:
+    """Refuse a user-scope actor that never joined the room (SEC6)."""
+    if actor.get("scope") == "user" and not is_room_member(db, room, actor):
+        raise forbidden("Join this room before reading or voting in it")
+
+
 def collect_room_data(db: Session, room: Room) -> dict[str, Any]:
     """Read everything the room state needs from the database.
 
@@ -134,6 +153,7 @@ async def broadcast_state(db: Session, room: Room) -> dict[str, Any]:
 
 
 def cast_vote(db: Session, room: Room, actor: dict[str, Any], value: str) -> Story:
+    require_room_membership(db, room, actor)
     if value not in DECK:
         raise bad_request("Pick a card from the deck")
     story = repositories.get_active_story(db, room.id)

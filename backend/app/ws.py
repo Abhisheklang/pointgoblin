@@ -68,6 +68,12 @@ async def room_socket(websocket: WebSocket, code: str, token: str = "") -> None:
         room = services.require_room(db, code)
         room_code = room.code
         host_id = room.host_id
+        # User tokens are not room bound: a registered account that never
+        # joined the room is refused, exactly as on the REST routes (SEC6).
+        # Guest tokens were already bound to their room above.
+        if actor.get("scope") == "user" and not services.is_room_member(db, room, actor):
+            await websocket.close(code=4403)
+            return
     except AppError:
         await websocket.close(code=4404)
         db.close()

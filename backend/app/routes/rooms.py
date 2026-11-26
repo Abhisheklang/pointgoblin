@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app import repositories, schemas, services
 from app.config import get_settings
 from app.database import get_db
-from app.deps import get_room_actor, get_user_actor
+from app.deps import get_optional_actor, get_room_actor, get_user_actor
 from app.rate_limit import limiter
 from app.security import create_guest_token
 
@@ -49,10 +49,17 @@ async def create_room(
 
 @router.post("/join")
 async def join_room(
-    payload: schemas.JoinRoomRequest, request: Request, db: Session = Depends(get_db)
+    payload: schemas.JoinRoomRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    actor: dict[str, Any] | None = Depends(get_optional_actor),
 ) -> dict[str, Any]:
     limiter.check(f"join:{_client_key(request)}", get_settings().auth_rate_limit)
     room = await asyncio.to_thread(services.require_room, db, payload.code)
+    if actor is not None and actor.get("scope") == "user":
+        # Joining while signed in records the account's membership of the
+        # room, which is what later admits its user token (SEC6).
+        await asyncio.to_thread(repositories.add_room_member, db, room.id, str(actor["sub"]))
     token = create_guest_token(room.code, payload.name)
     state = await services.build_state(db, room)
     return {"access_token": token, "room": state["room"], "state": state}
