@@ -196,3 +196,32 @@ def test_s3_activate_story_still_deactivates_others_sequentially():
     statuses_after = {s.title: s.status for s in repositories.list_stories(db, room.id)}
     db.close()
     assert statuses_after == {"One": "active", "Two": "done"}
+
+
+# ---------------------------------------------------------------- S4
+
+
+def test_s4_subscription_queue_is_bounded_and_drops_oldest():
+    import asyncio
+
+    from app.config import get_settings
+    from app.events import MemoryBus
+
+    async def run():
+        bus = MemoryBus()
+        sub = await bus.subscribe("room:ABC123")
+        cap = get_settings().subscription_queue_maxsize
+        assert sub.queue.maxsize == cap
+        for n in range(1000):
+            await bus.publish("room:ABC123", {"type": "state", "n": n})
+        assert sub.queue.qsize() == cap
+        assert sub.dropped == 1000 - cap
+        # Drop-oldest: the surviving messages are the most recent ones.
+        import json
+
+        last = None
+        while not sub.queue.empty():
+            last = json.loads(sub.queue.get_nowait())
+        assert last == {"type": "state", "n": 999}
+
+    asyncio.run(run())

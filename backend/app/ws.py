@@ -80,14 +80,30 @@ async def room_socket(websocket: WebSocket, code: str, token: str = "") -> None:
     await websocket.send_json({"type": "you", "name": str(actor["name"]), "is_host": is_host})
     subscription = await bus.subscribe(f"room:{room_code}")
     await broadcast_fresh_state(room_code)
+    ws_settings = get_settings()
 
     async def forward_events() -> None:
         while True:
             message = await subscription.queue.get()
-            await websocket.send_text(message)
+            try:
+                await asyncio.wait_for(
+                    websocket.send_text(message),
+                    timeout=ws_settings.ws_send_timeout_seconds,
+                )
+            except TimeoutError:
+                # The client stopped reading. Close the socket instead of
+                # buffering state for it forever; the bounded subscription
+                # queue caps what accumulates in the meantime.
+                logger.warning("Closing a websocket whose client stopped reading")
+                try:
+                    await asyncio.wait_for(
+                        websocket.close(), timeout=ws_settings.ws_send_timeout_seconds
+                    )
+                except Exception:
+                    pass
+                return
 
     forward_task = asyncio.create_task(forward_events())
-    ws_settings = get_settings()
     message_limiter = MessageRateLimiter(
         ws_settings.ws_message_rate_limit, ws_settings.rate_window_seconds
     )

@@ -32,6 +32,8 @@ class Settings(BaseSettings):
     rate_window_seconds: int = 60
     ws_message_rate_limit: int = 120
     ws_max_message_bytes: int = 64 * 1024
+    subscription_queue_maxsize: int = 50
+    ws_send_timeout_seconds: float = 10
     cors_origins: list[str] = ["http://localhost:5173", "http://localhost:8080"]
 
     @model_validator(mode="after")

@@ -29,12 +29,39 @@ def display_id(key: str) -> str:
 
 
 class Subscription:
-    """A queue that receives messages for one room channel."""
+    """A bounded queue that receives messages for one room channel.
+
+    The bound is the slow-consumer policy: a client that stops reading can
+    hold at most subscription_queue_maxsize (default 50) room-state
+    messages. On overflow the oldest queued message is dropped, because
+    every message is a full state snapshot and only the latest matters.
+    This class backs both the in-memory bus and the Redis bus fan-out, so
+    the bound applies to both.
+    """
 
     def __init__(self, channel: str) -> None:
         self.channel = channel
-        self.queue: asyncio.Queue[str] = asyncio.Queue()
+        self.queue: asyncio.Queue[str] = asyncio.Queue(
+            maxsize=get_settings().subscription_queue_maxsize
+        )
         self.loop = asyncio.get_running_loop()
+        self.dropped = 0
+
+    def _put_bounded(self, message: str) -> None:
+        try:
+            self.queue.put_nowait(message)
+            return
+        except asyncio.QueueFull:
+            pass
+        self.dropped += 1
+        try:
+            self.queue.get_nowait()
+        except asyncio.QueueEmpty:
+            pass
+        try:
+            self.queue.put_nowait(message)
+        except asyncio.QueueFull:
+            pass
 
     def deliver(self, message: str) -> None:
         if self.loop.is_closed():
@@ -44,9 +71,9 @@ class Subscription:
         except RuntimeError:
             running = None
         if running is self.loop:
-            self.queue.put_nowait(message)
+            self._put_bounded(message)
         else:
-            self.loop.call_soon_threadsafe(self.queue.put_nowait, message)
+            self.loop.call_soon_threadsafe(self._put_bounded, message)
 
 
 class EventBus:
