@@ -3,6 +3,7 @@
 import secrets
 import string
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app import models
@@ -76,10 +77,8 @@ def list_votes(db: Session, story_id: str) -> list[models.Vote]:
     return db.query(models.Vote).filter(models.Vote.story_id == story_id).all()
 
 
-def upsert_vote(
-    db: Session, story_id: str, participant_key: str, participant_name: str, value: str
-) -> models.Vote:
-    vote = (
+def _find_vote(db: Session, story_id: str, participant_key: str) -> models.Vote | None:
+    return (
         db.query(models.Vote)
         .filter(
             models.Vote.story_id == story_id,
@@ -87,18 +86,39 @@ def upsert_vote(
         )
         .first()
     )
-    if vote is None:
-        vote = models.Vote(
-            story_id=story_id,
-            participant_key=participant_key,
-            participant_name=participant_name,
-            value=value,
-        )
-        db.add(vote)
-    else:
+
+
+def upsert_vote(
+    db: Session, story_id: str, participant_key: str, participant_name: str, value: str
+) -> models.Vote:
+    vote = _find_vote(db, story_id, participant_key)
+    if vote is not None:
         vote.value = value
         vote.participant_name = participant_name
-    db.commit()
+        db.commit()
+        db.refresh(vote)
+        return vote
+    vote = models.Vote(
+        story_id=story_id,
+        participant_key=participant_key,
+        participant_name=participant_name,
+        value=value,
+    )
+    db.add(vote)
+    try:
+        db.commit()
+    except IntegrityError:
+        # A concurrent first vote from the same participant won the insert
+        # race and hit the unique constraint on our side. Roll back and fall
+        # back to updating the row the winner created, so the vote still
+        # lands instead of escaping as a 500 or a silently lost vote.
+        db.rollback()
+        vote = _find_vote(db, story_id, participant_key)
+        if vote is None:
+            raise
+        vote.value = value
+        vote.participant_name = participant_name
+        db.commit()
     db.refresh(vote)
     return vote
 
