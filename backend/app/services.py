@@ -3,6 +3,7 @@
 import statistics
 from typing import Any
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app import repositories
@@ -174,4 +175,11 @@ def activate_story(db: Session, room: Room, actor: dict[str, Any], story_id: str
 def register_user(db: Session, email: str, name: str, password_hash: str) -> User:
     if repositories.get_user_by_email(db, email) is not None:
         raise bad_request("An account with that email already exists")
-    return repositories.create_user(db, email, name, password_hash)
+    try:
+        return repositories.create_user(db, email, name, password_hash)
+    except IntegrityError:
+        # A concurrent registration with the same email won the race between
+        # the check above and the insert. The loser gets the same duplicate
+        # email 400 the pre-check raises, never a 500.
+        db.rollback()
+        raise bad_request("An account with that email already exists") from None

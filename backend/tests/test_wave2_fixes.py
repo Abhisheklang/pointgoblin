@@ -7,8 +7,9 @@ exercising the races hard enough that the old code failed them reliably.
 
 import threading
 
-from app import repositories
+from app import models, repositories, services
 from app.database import SessionLocal
+from app.errors import AppError
 
 
 def _run_threads(workers):
@@ -84,3 +85,28 @@ def test_s1_eight_thread_vote_race_loses_no_vote():
         votes = repositories.list_votes(db, story_id)
         db.close()
         assert len(votes) == 1
+
+
+# ---------------------------------------------------------------- S2
+
+
+def test_s2_duplicate_email_registration_race_loser_gets_400():
+    for i in range(50):
+        email = f"racer{i}@example.com"
+
+        def make_worker(email):
+            def work(db):
+                services.register_user(db, email, "Racer", "not-a-real-hash")  # noqa: B023
+
+            return work
+
+        errors = _run_threads([make_worker(email), make_worker(email)])
+        # Exactly one thread wins; the loser must see the duplicate-email
+        # AppError (400), never an IntegrityError escaping as a 500.
+        assert len(errors) == 1
+        assert isinstance(errors[0], AppError)
+        assert errors[0].status_code == 400
+        db = SessionLocal()
+        count = db.query(models.User).filter_by(email=email).count()
+        db.close()
+        assert count == 1
