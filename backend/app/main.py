@@ -149,7 +149,25 @@ class BodySizeLimitMiddleware:
         await self.app(scope, replay_receive, send)
 
 
-app = FastAPI(title="PointGoblin API", version="1.0.0", lifespan=lifespan)
+# The interactive docs and the OpenAPI schema are development aids.
+# Outside dev mode they would hand the full endpoint inventory and every
+# schema to unauthenticated callers, so they are not mounted at all
+# (SEC7/PG-S1).
+if settings.environment == "dev":
+    docs_url: str | None = "/docs"
+    redoc_url: str | None = "/redoc"
+    openapi_url: str | None = "/openapi.json"
+else:
+    docs_url = redoc_url = openapi_url = None
+
+app = FastAPI(
+    title="PointGoblin API",
+    version="1.0.0",
+    lifespan=lifespan,
+    docs_url=docs_url,
+    redoc_url=redoc_url,
+    openapi_url=openapi_url,
+)
 app.add_exception_handler(AppError, app_error_handler)
 app.add_exception_handler(RequestValidationError, validation_error_handler)
 app.add_middleware(
